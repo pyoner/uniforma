@@ -1,48 +1,57 @@
 <script lang="ts">
-  import {
-    createProps,
-    defaultValue,
-    getAtPath,
-    getErrorTreeAtPath,
-  } from "../../helpers.ts";
+  import { defaultValue } from "../../helpers.ts";
+  import type { FieldProps, Props } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  const p = createProps<number>();
-  export let form = p.form;
-  export let schema = p.schema;
-  export let components = p.components;
-  export let path = p.path;
-  export let props = p.props;
+  let {
+    form,
+    schema,
+    components,
+    path,
+    props = {},
+  }: FieldProps<number> = $props();
 
-  $: valueStore = form.value;
-  $: errorStore = form.errors;
-  $: currentValue = getAtPath($valueStore, path) as number | null | undefined;
+  let currentValue = $state<number | null | undefined>(undefined);
+  let fieldErrors = $state<readonly string[]>([]);
 
-  $: if (schema && currentValue == null) {
-    const nextValue = defaultValue<number>(schema, currentValue ?? null);
-    if (nextValue != null) {
-      void form.patch(path, nextValue);
+  $effect(() => {
+    const field = form.field(path);
+    const unsubscribeValue = field.value.subscribe((nextValue) => {
+      currentValue = nextValue as number | null | undefined;
+    });
+    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+      fieldErrors = nextErrors;
+    });
+
+    return () => {
+      unsubscribeValue();
+      unsubscribeErrors();
+    };
+  });
+
+  $effect(() => {
+    if (currentValue == null) {
+      const nextValue = defaultValue<number>(schema.raw, currentValue ?? null);
+      if (nextValue != null) {
+        void form.patch(path, nextValue);
+      }
     }
-  }
+  });
 
   function updateValue(nextValue: string) {
     void form.patch(path, nextValue === "" ? undefined : Number(nextValue));
   }
 </script>
 
-<Wrap
-  {schema}
-  component={components.wrapper}
-  errors={getErrorTreeAtPath($errorStore, path)}
->
+<Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   <input
     type="number"
     step={schema.kind === "integer"
       ? "1"
-      : String((props?.step as string | undefined) ?? "any")}
+      : String(((props as Props).step as string | undefined) ?? "any")}
     value={currentValue ?? ""}
-    on:input={(event) =>
+    oninput={(event) =>
       updateValue((event.currentTarget as HTMLInputElement).value)}
-    on:blur={() => form.blur(path)}
+    onblur={() => void form.blur(path)}
   />
 </Wrap>

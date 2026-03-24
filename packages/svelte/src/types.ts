@@ -1,9 +1,17 @@
-import type { UniformaErrorTree, UniformaSchema } from "@uniforma/core";
+import type {
+  InferInput,
+  InferOutput,
+  NormalizedSchemaNode,
+  UniformaErrorTree,
+  UniformaSchema,
+} from "@uniforma/core";
+
+import type { Component, Snippet } from "svelte";
 
 import type { UniformaForm, ValidationMode } from "./controller.ts";
 
 export type Props = Record<string, unknown>;
-export type SvelteComponentLike = (...args: any[]) => any;
+export type SvelteComponentLike = Component<any>;
 export type SvelteComponentProps = SvelteComponentLike | readonly [SvelteComponentLike, Props];
 
 export interface FieldComponents {
@@ -31,7 +39,7 @@ export interface FieldProps<
   TErrors = readonly string[] | UniformaErrorTree | null,
 > {
   readonly form: UniformaForm<any>;
-  readonly schema: UniformaSchema;
+  readonly schema: NormalizedSchemaNode;
   readonly components: FormComponents;
   readonly path: readonly (string | number)[];
   readonly value?: TValue;
@@ -39,11 +47,23 @@ export interface FieldProps<
   readonly props?: Props;
 }
 
-export interface FormComponentProps {
-  readonly schema: UniformaSchema;
-  readonly value?: unknown;
+export interface FormRenderState {
+  readonly errors: UniformaErrorTree | null;
+  readonly rootErrors: readonly string[];
+  readonly valid: boolean;
+  readonly validating: boolean;
+  readonly submitting: boolean;
+}
+
+export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSchema> {
+  readonly schema: TSchema;
+  readonly value?: InferInput<TSchema>;
   readonly components?: FormComponents;
   readonly validateOn?: ValidationMode | readonly ValidationMode[];
+  readonly onValueChange?: ((value: InferInput<TSchema>) => void) | undefined;
+  readonly onSubmit?: ((value: InferOutput<TSchema>) => void | Promise<void>) | undefined;
+  readonly onReset?: ((value: InferInput<TSchema>) => void) | undefined;
+  readonly controls?: Snippet<[FormRenderState]> | undefined;
 }
 
 export type Errors = UniformaErrorTree | readonly string[] | null;

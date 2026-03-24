@@ -18,6 +18,7 @@ export type {
   FieldProps,
   FormComponentProps,
   FormComponents,
+  FormRenderState,
   Props,
   SvelteComponentProps,
 } from "./types.ts";

@@ -1,20 +1,33 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { getComponent, getFieldErrors, getProps } from "../../helpers.ts";
   import type { NormalizedSchemaNode } from "@uniforma/core";
   import type { SvelteComponentProps } from "../../types.ts";
 
-  export let schema: NormalizedSchemaNode = undefined as never;
-  export let component: SvelteComponentProps = undefined as never;
-  export let errors = null;
+  let {
+    schema,
+    component,
+    errors = null,
+    children,
+  }: {
+    schema: NormalizedSchemaNode;
+    component: SvelteComponentProps;
+    errors?: unknown;
+    children?: Snippet;
+  } = $props();
+
+  const WrapperComponent = $derived(getComponent(schema, component));
+  const wrapperProps = $derived(getProps(schema, component));
+  const fieldErrors = $derived(getFieldErrors(errors));
 </script>
 
-<svelte:component
-  this={getComponent(schema, component)}
-  {...getProps(schema, component)}
+<WrapperComponent
+  {...wrapperProps}
   title={schema.title}
   description={schema.description}
   isFieldset={schema.kind === "object" || schema.kind === "array"}
-  errors={getFieldErrors(errors)}
+  errors={fieldErrors}
 >
-  <slot />
-</svelte:component>
+  {@render children?.()}
+</WrapperComponent>

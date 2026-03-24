@@ -84,6 +84,7 @@ export function createForm<TSchema extends UniformaSchema>(
   const touched = writable<Record<string, boolean>>({});
   const validating = writable(false);
   const submitting = writable(false);
+  const fieldControllers = new Map<string, FieldController>();
 
   const valid = derived(errors, ($errors) => !hasErrors($errors));
   const dirty = derived(value, ($value) => JSON.stringify($value) !== JSON.stringify(initialValue));
@@ -128,7 +129,13 @@ export function createForm<TSchema extends UniformaSchema>(
   }
 
   function field(path: FormPath): FieldController {
-    return {
+    const key = pathToKey(path);
+    const existing = fieldControllers.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const controller: FieldController = {
       value: derived(value, ($value) => getValueAtPath($value, path)),
       errors: derived(errors, ($errors) => getErrorsAtPath($errors, path)),
       touched: derived(touched, ($touched) => Boolean($touched[pathToKey(path)])),
@@ -139,6 +146,9 @@ export function createForm<TSchema extends UniformaSchema>(
         return blur(path);
       },
     };
+
+    fieldControllers.set(key, controller);
+    return controller;
   }
 
   async function validate() {

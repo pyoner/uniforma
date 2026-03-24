@@ -93,6 +93,10 @@ export function getFieldComponent(
 export function getFieldErrors(
   errorTree: ReturnType<typeof getErrorTreeAtPath>,
 ): readonly string[] {
+  if (Array.isArray(errorTree)) {
+    return errorTree;
+  }
+
   return errorTree?._errors ?? [];
 }
 

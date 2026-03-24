@@ -1,31 +1,37 @@
 <script lang="ts">
-  import { createProps, getAtPath, getErrorTreeAtPath } from "../../helpers.ts";
+  import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  const p = createProps<null>();
-  export let form = p.form;
-  export let schema = p.schema;
-  export let components = p.components;
-  export let path = p.path;
+  let { form, schema, components, path }: FieldProps<null> = $props();
 
-  $: valueStore = form.value;
-  $: errorStore = form.errors;
-  $: currentValue = getAtPath($valueStore, path);
+  let currentValue = $state<unknown>(undefined);
+  let fieldErrors = $state<readonly string[]>([]);
+
+  $effect(() => {
+    const field = form.field(path);
+    const unsubscribeValue = field.value.subscribe((nextValue) => {
+      currentValue = nextValue;
+    });
+    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+      fieldErrors = nextErrors;
+    });
+
+    return () => {
+      unsubscribeValue();
+      unsubscribeErrors();
+    };
+  });
 </script>
 
-<Wrap
-  {schema}
-  component={components.wrapper}
-  errors={getErrorTreeAtPath($errorStore, path)}
->
+<Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   <input
     type="checkbox"
     checked={currentValue === null}
-    on:change={(event) =>
+    onchange={(event) =>
       void form.patch(
         path,
         (event.currentTarget as HTMLInputElement).checked ? null : undefined,
       )}
-    on:blur={() => form.blur(path)}
+    onblur={() => void form.blur(path)}
   />
 </Wrap>

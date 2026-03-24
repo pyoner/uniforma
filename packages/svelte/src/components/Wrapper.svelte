@@ -1,8 +1,19 @@
 <script lang="ts">
-  export let title: string | undefined = undefined;
-  export let description: string | undefined = undefined;
-  export let errors: readonly string[] = [];
-  export let isFieldset = false;
+  import type { Snippet } from "svelte";
+
+  let {
+    title = undefined,
+    description = undefined,
+    errors = [],
+    isFieldset = false,
+    children,
+  }: {
+    title?: string | undefined;
+    description?: string | undefined;
+    errors?: readonly string[];
+    isFieldset?: boolean;
+    children?: Snippet;
+  } = $props();
 </script>
 
 {#if isFieldset}
@@ -18,7 +29,7 @@
       </div>
     {/if}
 
-    <slot />
+    {@render children?.()}
 
     {#if errors.length > 0}
       <ul class="uniforma-errors">
@@ -43,7 +54,7 @@
       </div>
     {/if}
 
-    <slot />
+    {@render children?.()}
 
     {#if errors.length > 0}
       <ul class="uniforma-errors">

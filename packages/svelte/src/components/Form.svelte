@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-
   import {
     getErrorsAtPath,
     type InferInput,
+    type UniformaErrorTree,
     type UniformaSchema,
   } from "@uniforma/core";
 
@@ -14,73 +13,182 @@
     getProps,
     getPropsFromContainer,
   } from "../helpers.ts";
-  import type { FormComponents } from "../types.ts";
+  import type {
+    FormComponentProps,
+    FormComponents,
+    FormRenderState,
+  } from "../types.ts";
   import { defaultFormComponents as componentsFallback } from "./defaults.ts";
 
-  export let schema: UniformaSchema = undefined as never;
-  export let value: InferInput<typeof schema> | undefined = undefined;
-  export let components: FormComponents = componentsFallback;
-  export let validateOn:
-    | ValidationMode
-    | readonly ValidationMode[]
-    | undefined = undefined;
+  let {
+    schema,
+    value = undefined,
+    components = componentsFallback,
+    validateOn = undefined,
+    onValueChange,
+    onSubmit,
+    onReset,
+    controls: controlsSnippet,
+  }: FormComponentProps = $props();
 
-  const dispatch = createEventDispatcher<{
-    submit: unknown;
-    reset: unknown;
-  }>();
+  let form = $state<ReturnType<typeof createForm> | null>(null);
+  let currentValue = $state<InferInput<UniformaSchema> | undefined>(undefined);
+  let currentErrors = $state<UniformaErrorTree | null>(null);
+  let currentValid = $state(true);
+  let currentValidating = $state(false);
+  let currentSubmitting = $state(false);
+  let lastSyncedPropValueKey = $state<string | undefined>(undefined);
 
-  const form = createForm(schema, {
-    initialValue: value,
-    validateOn,
+  $effect.pre(() => {
+    if (!form) {
+      form = createForm(schema, {
+        initialValue: value,
+        validateOn,
+      });
+      currentValue = value as InferInput<UniformaSchema> | undefined;
+      lastSyncedPropValueKey = toValueKey(value);
+    }
   });
-  const valueStore = form.value;
-  const errorStore = form.errors;
-  const validStore = form.valid;
-  const validatingStore = form.validating;
-  const submittingStore = form.submitting;
 
-  $: rootField = getFieldComponent(form.normalizedSchema, components);
+  $effect(() => {
+    if (!form) {
+      return;
+    }
 
-  $: value = $valueStore;
+    const unsubscribeValue = form.value.subscribe((nextValue) => {
+      const nextValueKey = toValueKey(nextValue);
+      currentValue = nextValue as InferInput<UniformaSchema>;
+
+      if (nextValueKey === lastSyncedPropValueKey) {
+        return;
+      }
+
+      onValueChange?.(nextValue as InferInput<UniformaSchema>);
+    });
+    const unsubscribeErrors = form.errors.subscribe((nextErrors) => {
+      currentErrors = nextErrors;
+    });
+    const unsubscribeValid = form.valid.subscribe((nextValid) => {
+      currentValid = nextValid;
+    });
+    const unsubscribeValidating = form.validating.subscribe(
+      (nextValidating) => {
+        currentValidating = nextValidating;
+      },
+    );
+    const unsubscribeSubmitting = form.submitting.subscribe(
+      (nextSubmitting) => {
+        currentSubmitting = nextSubmitting;
+      },
+    );
+
+    return () => {
+      unsubscribeValue();
+      unsubscribeErrors();
+      unsubscribeValid();
+      unsubscribeValidating();
+      unsubscribeSubmitting();
+    };
+  });
+
+  const normalizedSchema = $derived(form?.normalizedSchema ?? null);
+  const rootField = $derived(
+    normalizedSchema ? getFieldComponent(normalizedSchema, components) : null,
+  );
+  const LayoutComponent = $derived(
+    getComponentFromContainer(components.layout),
+  );
+  const layoutProps = $derived(getPropsFromContainer(components.layout));
+  const RootComponent = $derived(
+    rootField ? getComponentFromContainer(rootField) : null,
+  );
+  const rootProps = $derived(
+    normalizedSchema && rootField ? getProps(normalizedSchema, rootField) : {},
+  );
+  const renderState = $derived<FormRenderState>({
+    errors: currentErrors,
+    rootErrors: getErrorsAtPath(currentErrors, []),
+    valid: currentValid,
+    validating: currentValidating,
+    submitting: currentSubmitting,
+  });
+
+  $effect(() => {
+    const nextPropValueKey = toValueKey(value);
+
+    if (
+      form &&
+      value !== undefined &&
+      nextPropValueKey !== toValueKey(currentValue)
+    ) {
+      lastSyncedPropValueKey = nextPropValueKey;
+      void form.setValue(value as InferInput<UniformaSchema>);
+    }
+  });
 
   async function submit() {
+    if (!form) {
+      return;
+    }
+
     const result = await form.submit();
     if (result.success) {
-      dispatch("submit", result.value);
+      await onSubmit?.(result.value);
     }
   }
 
   function reset() {
+    if (!form) {
+      return;
+    }
+
     form.reset();
-    dispatch("reset", value);
+    if (currentValue !== undefined) {
+      onReset?.(currentValue);
+    }
+  }
+
+  function toValueKey(nextValue: unknown): string | undefined {
+    if (nextValue === undefined) {
+      return undefined;
+    }
+
+    return JSON.stringify($state.snapshot(nextValue));
   }
 </script>
 
-<form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
-  <svelte:component
-    this={getComponentFromContainer(components.layout) as never}
-    {...getPropsFromContainer(components.layout)}
-  >
-    <div slot="fields">
-      <svelte:component
-        this={getComponentFromContainer(rootField) as never}
-        {form}
-        schema={form.normalizedSchema}
-        {components}
-        path={[]}
-        props={getProps(form.normalizedSchema, rootField)}
-      />
-    </div>
+<form
+  onsubmit={(event) => {
+    event.preventDefault();
+    void submit();
+  }}
+  onreset={(event) => {
+    event.preventDefault();
+    reset();
+  }}
+>
+  <LayoutComponent {...layoutProps}>
+    {#snippet fields()}
+      {#if form && normalizedSchema && RootComponent}
+        <RootComponent
+          {form}
+          schema={normalizedSchema}
+          {components}
+          path={[]}
+          props={rootProps}
+        />
+      {/if}
+    {/snippet}
 
-    <div slot="ctrl">
-      <slot
-        errors={$errorStore}
-        rootErrors={getErrorsAtPath($errorStore, [])}
-        valid={$validStore}
-        validating={$validatingStore}
-        submitting={$submittingStore}
-      />
-    </div>
-  </svelte:component>
+    {#snippet controls()}
+      {#if controlsSnippet}
+        {@render controlsSnippet(renderState)}
+      {:else}
+        <div class="uniforma-form-controls">
+          <button type="reset">Reset</button>
+          <button type="submit">Submit</button>
+        </div>
+      {/if}
+    {/snippet}
+  </LayoutComponent>
 </form>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getErrorsAtPath, setAtPath } from "@uniforma/core";
+  import { setAtPath } from "@uniforma/core";
   import { Form, components } from "@uniforma/svelte";
   import { z } from "zod";
 
@@ -39,10 +39,6 @@
 
   let submittedValue = "";
 
-  function handleSubmit(event: CustomEvent<unknown>) {
-    submittedValue = JSON.stringify(event.detail, null, 2);
-  }
-
   function loadExample() {
     const seeded = setAtPath(value, ["studio", "city"], "Tokyo");
     const withLinks = setAtPath(
@@ -51,10 +47,6 @@
       ["https://uniforma.dev", "https://example.com/docs"],
     );
     value = withLinks as typeof value;
-  }
-
-  function handleReset(event: CustomEvent<unknown>) {
-    submittedValue = JSON.stringify(event.detail, null, 2);
   }
 </script>
 
@@ -110,7 +102,7 @@
         </div>
 
         <div class="actions">
-          <button type="button" class="ghost" on:click={loadExample}
+          <button type="button" class="ghost" onclick={loadExample}
             >Load example</button
           >
         </div>
@@ -119,39 +111,44 @@
       <Form
         schema={profileSchema}
         {components}
-        bind:value
+        {value}
+        onValueChange={(next) => {
+          value = next as typeof value;
+        }}
         validateOn={["blur", "submit"]}
-        on:submit={handleSubmit}
-        on:reset={handleReset}
-        let:errors
-        let:valid
-        let:validating
-        let:submitting
+        onSubmit={(result) => {
+          submittedValue = JSON.stringify(result, null, 2);
+        }}
+        onReset={(next) => {
+          submittedValue = JSON.stringify(next, null, 2);
+        }}
       >
-        {#if getErrorsAtPath(errors, []).length > 0}
-          <div class="notice error">
-            {#each getErrorsAtPath(errors, []) as message (message)}
-              <p>{message}</p>
-            {/each}
-          </div>
-        {/if}
+        {#snippet controls({ rootErrors, valid, validating, submitting })}
+          {#if rootErrors.length > 0}
+            <div class="notice error">
+              {#each rootErrors as message (message)}
+                <p>{message}</p>
+              {/each}
+            </div>
+          {/if}
 
-        <div class="submit-row">
-          <div class="status-line">
-            <span>{valid ? "ready" : "needs attention"}</span>
-            <span
-              >{validating
-                ? "validating"
-                : submitting
-                  ? "submitting"
-                  : "idle"}</span
-            >
+          <div class="submit-row">
+            <div class="status-line">
+              <span>{valid ? "ready" : "needs attention"}</span>
+              <span
+                >{validating
+                  ? "validating"
+                  : submitting
+                    ? "submitting"
+                    : "idle"}</span
+              >
+            </div>
+            <div class="actions">
+              <button type="reset" class="ghost">Reset</button>
+              <button type="submit" class="primary">Validate and submit</button>
+            </div>
           </div>
-          <div class="actions">
-            <button type="reset" class="ghost">Reset</button>
-            <button type="submit" class="primary">Validate and submit</button>
-          </div>
-        </div>
+        {/snippet}
       </Form>
     </section>
 

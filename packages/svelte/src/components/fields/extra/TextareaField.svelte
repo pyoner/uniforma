@@ -1,39 +1,43 @@
 <script lang="ts">
-  import {
-    createProps,
-    defaultValue,
-    getAtPath,
-    getErrorTreeAtPath,
-  } from "../../../helpers.ts";
+  import { defaultValue } from "../../../helpers.ts";
+  import type { FieldProps } from "../../../types.ts";
   import Wrap from "../../helpers/Wrap.svelte";
 
-  const p = createProps<string>();
-  export let form = p.form;
-  export let schema = p.schema;
-  export let components = p.components;
-  export let path = p.path;
+  let { form, schema, components, path }: FieldProps<string> = $props();
 
-  $: valueStore = form.value;
-  $: errorStore = form.errors;
-  $: currentValue = getAtPath($valueStore, path) as string | null | undefined;
+  let currentValue = $state<string | null | undefined>(undefined);
+  let fieldErrors = $state<readonly string[]>([]);
 
-  $: if (schema && currentValue == null) {
-    const nextValue = defaultValue<string>(schema, currentValue ?? null);
-    if (nextValue != null) {
-      void form.patch(path, nextValue);
+  $effect(() => {
+    const field = form.field(path);
+    const unsubscribeValue = field.value.subscribe((nextValue) => {
+      currentValue = nextValue as string | null | undefined;
+    });
+    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+      fieldErrors = nextErrors;
+    });
+
+    return () => {
+      unsubscribeValue();
+      unsubscribeErrors();
+    };
+  });
+
+  $effect(() => {
+    if (currentValue == null) {
+      const nextValue = defaultValue<string>(schema.raw, currentValue ?? null);
+      if (nextValue != null) {
+        void form.patch(path, nextValue);
+      }
     }
-  }
+  });
 </script>
 
-<Wrap
-  {schema}
-  component={components.wrapper}
-  errors={getErrorTreeAtPath($errorStore, path)}
->
+<Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   <textarea
     value={currentValue ?? ""}
-    on:input={(event) =>
+    oninput={(event) =>
       void form.patch(path, (event.currentTarget as HTMLTextAreaElement).value)}
-    on:blur={() => form.blur(path)}
+    onblur={() => void form.blur(path)}
   ></textarea>
 </Wrap>
