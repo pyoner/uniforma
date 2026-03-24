@@ -1,0 +1,3 @@
+[submodule "svelte-form"]
+	path = svelte-form
+	url = https://github.com/pyoner/svelte-form.git
