@@ -4,11 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "vp check",
     "dev": "vp dev",
-    "build": "tsc && vp build",
+    "build": "vp build",
     "preview": "vp preview"
   },
+  "dependencies": {
+    "@uniforma/core": "workspace:*",
+    "@uniforma/svelte": "workspace:*",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "catalog:",
+    "svelte": "catalog:",
     "typescript": "~5.9.3",
     "vite": "catalog:",
     "vite-plus": "catalog:"

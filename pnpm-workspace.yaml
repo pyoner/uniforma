@@ -3,14 +3,18 @@ packages:
   - packages/*
   - tools/*
 
-catalogMode: prefer
-
 catalog:
+  "@standard-schema/spec": ^1.1.0
+  "@sveltejs/vite-plugin-svelte": ^7.0.0
   "@types/node": ^24
+  svelte: ^5.55.0
   typescript: ^5
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
+  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  zod: ^4.3.6
+
+catalogMode: prefer
 overrides:
   vite: "catalog:"
   vitest: "catalog:"
