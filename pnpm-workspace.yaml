@@ -4,11 +4,17 @@ packages:
   - tools/*
 
 catalog:
+  "@eslint/js": ^10.0.1
   "@standard-schema/spec": ^1.1.0
   "@sveltejs/vite-plugin-svelte": ^7.0.0
   "@types/node": ^24
+  eslint: ^10.1.0
+  eslint-plugin-svelte: ^3.16.0
+  prettier: ^3.8.1
+  prettier-plugin-svelte: ^3.5.1
   svelte: ^5.55.0
   typescript: ^5
+  typescript-eslint: ^8.57.2
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vite-plus: latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest

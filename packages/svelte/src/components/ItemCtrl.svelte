@@ -9,5 +9,7 @@
 <div class="uniforma-array-actions">
   <button type="button" on:click={remove}>Remove</button>
   <button type="button" disabled={position <= 0} on:click={moveUp}>Up</button>
-  <button type="button" disabled={position >= length - 1} on:click={moveDown}>Down</button>
+  <button type="button" disabled={position >= length - 1} on:click={moveDown}
+    >Down</button
+  >
 </div>

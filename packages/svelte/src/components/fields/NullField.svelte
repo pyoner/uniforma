@@ -13,10 +13,19 @@
   $: currentValue = getAtPath($valueStore, path);
 </script>
 
-<Wrap {schema} component={components.wrapper} errors={getErrorTreeAtPath($errorStore, path)}>
+<Wrap
+  {schema}
+  component={components.wrapper}
+  errors={getErrorTreeAtPath($errorStore, path)}
+>
   <input
     type="checkbox"
     checked={currentValue === null}
-    on:change={(event) => void form.patch(path, (event.currentTarget as HTMLInputElement).checked ? null : undefined)}
-    on:blur={() => form.blur(path)} />
+    on:change={(event) =>
+      void form.patch(
+        path,
+        (event.currentTarget as HTMLInputElement).checked ? null : undefined,
+      )}
+    on:blur={() => form.blur(path)}
+  />
 </Wrap>

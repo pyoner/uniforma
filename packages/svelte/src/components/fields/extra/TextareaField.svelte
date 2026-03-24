@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { createProps, defaultValue, getAtPath, getErrorTreeAtPath } from "../../../helpers.ts";
+  import {
+    createProps,
+    defaultValue,
+    getAtPath,
+    getErrorTreeAtPath,
+  } from "../../../helpers.ts";
   import Wrap from "../../helpers/Wrap.svelte";
 
   const p = createProps<string>();
@@ -20,6 +25,15 @@
   }
 </script>
 
-<Wrap {schema} component={components.wrapper} errors={getErrorTreeAtPath($errorStore, path)}>
-  <textarea value={currentValue ?? ""} on:input={(event) => void form.patch(path, (event.currentTarget as HTMLTextAreaElement).value)} on:blur={() => form.blur(path)}></textarea>
+<Wrap
+  {schema}
+  component={components.wrapper}
+  errors={getErrorTreeAtPath($errorStore, path)}
+>
+  <textarea
+    value={currentValue ?? ""}
+    on:input={(event) =>
+      void form.patch(path, (event.currentTarget as HTMLTextAreaElement).value)}
+    on:blur={() => form.blur(path)}
+  ></textarea>
 </Wrap>

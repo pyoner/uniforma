@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { createProps, defaultValue, getAtPath, getErrorTreeAtPath } from "../../helpers.ts";
+  import {
+    createProps,
+    defaultValue,
+    getAtPath,
+    getErrorTreeAtPath,
+  } from "../../helpers.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
   const p = createProps<number>();
@@ -25,11 +30,19 @@
   }
 </script>
 
-<Wrap {schema} component={components.wrapper} errors={getErrorTreeAtPath($errorStore, path)}>
+<Wrap
+  {schema}
+  component={components.wrapper}
+  errors={getErrorTreeAtPath($errorStore, path)}
+>
   <input
     type="number"
-    step={schema.kind === "integer" ? "1" : String((props?.step as string | undefined) ?? "any")}
+    step={schema.kind === "integer"
+      ? "1"
+      : String((props?.step as string | undefined) ?? "any")}
     value={currentValue ?? ""}
-    on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)}
-    on:blur={() => form.blur(path)} />
+    on:input={(event) =>
+      updateValue((event.currentTarget as HTMLInputElement).value)}
+    on:blur={() => form.blur(path)}
+  />
 </Wrap>

@@ -14,6 +14,7 @@
   title={schema.title}
   description={schema.description}
   isFieldset={schema.kind === "object" || schema.kind === "array"}
-  errors={getFieldErrors(errors)}>
+  errors={getFieldErrors(errors)}
+>
   <slot />
 </svelte:component>

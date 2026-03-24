@@ -46,16 +46,23 @@
   }
 </script>
 
-<Wrap {schema} component={components.wrapper} errors={getErrorTreeAtPath($errorStore, path)}>
+<Wrap
+  {schema}
+  component={components.wrapper}
+  errors={getErrorTreeAtPath($errorStore, path)}
+>
   {#each items as _, index (index)}
-    <svelte:component this={getComponentFromContainer(components.itemWrapper) as never}>
+    <svelte:component
+      this={getComponentFromContainer(components.itemWrapper) as never}
+    >
       <svelte:component
         this={getComponentFromContainer(itemComponent) as never}
         {form}
         schema={itemSchema}
         {components}
         path={[...path, index]}
-        props={getProps(itemSchema, itemComponent)} />
+        props={getProps(itemSchema, itemComponent)}
+      />
 
       <div slot="ctrl">
         <svelte:component
@@ -64,10 +71,15 @@
           moveUp={() => moveItem(index, index - 1)}
           moveDown={() => moveItem(index, index + 1)}
           position={index}
-          length={items.length} />
+          length={items.length}
+        />
       </div>
     </svelte:component>
   {/each}
 
-  <svelte:component this={getComponentFromContainer(components.addItem) as never} {addItem} props={{}} />
+  <svelte:component
+    this={getComponentFromContainer(components.addItem) as never}
+    {addItem}
+    props={{}}
+  />
 </Wrap>

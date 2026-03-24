@@ -4,11 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "format:svelte": "vp exec prettier --write \"apps/**/*.svelte\" \"packages/**/*.svelte\"",
+    "format:svelte:check": "vp exec prettier --check \"apps/**/*.svelte\" \"packages/**/*.svelte\"",
+    "lint:svelte": "vp exec eslint \"apps/**/*.svelte\" \"packages/**/*.svelte\" --max-warnings=0",
     "ready": "vp fmt && vp lint && vp run test -r && vp run build -r",
     "dev": "vp run website#dev",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-svelte": "catalog:",
+    "prettier": "catalog:",
+    "prettier-plugin-svelte": "catalog:",
+    "typescript-eslint": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

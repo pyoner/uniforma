@@ -1,17 +1,29 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  import { getErrorsAtPath, type InferInput, type UniformaSchema } from "@uniforma/core";
+  import {
+    getErrorsAtPath,
+    type InferInput,
+    type UniformaSchema,
+  } from "@uniforma/core";
 
   import { createForm, type ValidationMode } from "../controller.ts";
-  import { getComponentFromContainer, getFieldComponent, getProps, getPropsFromContainer } from "../helpers.ts";
+  import {
+    getComponentFromContainer,
+    getFieldComponent,
+    getProps,
+    getPropsFromContainer,
+  } from "../helpers.ts";
   import type { FormComponents } from "../types.ts";
   import { defaultFormComponents as componentsFallback } from "./defaults.ts";
 
   export let schema: UniformaSchema = undefined as never;
   export let value: InferInput<typeof schema> | undefined = undefined;
   export let components: FormComponents = componentsFallback;
-  export let validateOn: ValidationMode | readonly ValidationMode[] | undefined = undefined;
+  export let validateOn:
+    | ValidationMode
+    | readonly ValidationMode[]
+    | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
     submit: unknown;
@@ -22,12 +34,12 @@
     initialValue: value,
     validateOn,
   });
+  const valueStore = form.value;
+  const errorStore = form.errors;
+  const validStore = form.valid;
+  const validatingStore = form.validating;
+  const submittingStore = form.submitting;
 
-  $: valueStore = form.value;
-  $: errorStore = form.errors;
-  $: validStore = form.valid;
-  $: validatingStore = form.validating;
-  $: submittingStore = form.submitting;
   $: rootField = getFieldComponent(form.normalizedSchema, components);
 
   $: value = $valueStore;
@@ -46,7 +58,10 @@
 </script>
 
 <form on:submit|preventDefault={submit} on:reset|preventDefault={reset}>
-  <svelte:component this={getComponentFromContainer(components.layout) as never} {...getPropsFromContainer(components.layout)}>
+  <svelte:component
+    this={getComponentFromContainer(components.layout) as never}
+    {...getPropsFromContainer(components.layout)}
+  >
     <div slot="fields">
       <svelte:component
         this={getComponentFromContainer(rootField) as never}
@@ -54,7 +69,8 @@
         schema={form.normalizedSchema}
         {components}
         path={[]}
-        props={getProps(form.normalizedSchema, rootField)} />
+        props={getProps(form.normalizedSchema, rootField)}
+      />
     </div>
 
     <div slot="ctrl">
@@ -63,7 +79,8 @@
         rootErrors={getErrorsAtPath($errorStore, [])}
         valid={$validStore}
         validating={$validatingStore}
-        submitting={$submittingStore} />
+        submitting={$submittingStore}
+      />
     </div>
   </svelte:component>
 </form>

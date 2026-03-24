@@ -22,7 +22,7 @@
 
     {#if errors.length > 0}
       <ul class="uniforma-errors">
-        {#each errors as message}
+        {#each errors as message (message)}
           <li>{message}</li>
         {/each}
       </ul>
@@ -47,7 +47,7 @@
 
     {#if errors.length > 0}
       <ul class="uniforma-errors">
-        {#each errors as message}
+        {#each errors as message (message)}
           <li>{message}</li>
         {/each}
       </ul>

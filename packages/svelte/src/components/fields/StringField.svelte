@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { createProps, defaultValue, getAtPath, getErrorTreeAtPath } from "../../helpers.ts";
+  import {
+    createProps,
+    defaultValue,
+    getAtPath,
+    getErrorTreeAtPath,
+  } from "../../helpers.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
   const p = createProps<string>();
@@ -24,27 +29,69 @@
   }
 </script>
 
-<Wrap {schema} component={components.wrapper} errors={getErrorTreeAtPath($errorStore, path)}>
+<Wrap
+  {schema}
+  component={components.wrapper}
+  errors={getErrorTreeAtPath($errorStore, path)}
+>
   {#if schema.kind === "enum" && (schema.enumValues?.length ?? 0) > 0}
     <select
       value={String(currentValue ?? "")}
-      on:change={(event) => updateValue((event.currentTarget as HTMLSelectElement).value)}
-      on:blur={() => form.blur(path)}>
-      {#each schema.enumValues ?? [] as option}
+      on:change={(event) =>
+        updateValue((event.currentTarget as HTMLSelectElement).value)}
+      on:blur={() => form.blur(path)}
+    >
+      {#each schema.enumValues ?? [] as option (String(option))}
         <option value={String(option)}>{String(option)}</option>
       {/each}
     </select>
   {:else if schema.format === "date-time"}
-    <input type="datetime-local" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="datetime-local"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {:else if schema.format === "date"}
-    <input type="date" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="date"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {:else if schema.format === "time"}
-    <input type="time" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="time"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {:else if schema.format === "email"}
-    <input type="email" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="email"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {:else if schema.format === "url"}
-    <input type="url" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="url"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {:else}
-    <input type="text" value={currentValue ?? ""} on:input={(event) => updateValue((event.currentTarget as HTMLInputElement).value)} on:blur={() => form.blur(path)} />
+    <input
+      type="text"
+      value={currentValue ?? ""}
+      on:input={(event) =>
+        updateValue((event.currentTarget as HTMLInputElement).value)}
+      on:blur={() => form.blur(path)}
+    />
   {/if}
 </Wrap>

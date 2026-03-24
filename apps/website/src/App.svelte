@@ -4,8 +4,14 @@
   import { z } from "zod";
 
   const profileSchema = z.object({
-    fullName: z.string().min(2, "Tell us your full name").default("Ada Lovelace"),
-    email: z.string().email("Use a valid email address").default("ada@uniforma.dev"),
+    fullName: z
+      .string()
+      .min(2, "Tell us your full name")
+      .default("Ada Lovelace"),
+    email: z
+      .string()
+      .email("Use a valid email address")
+      .default("ada@uniforma.dev"),
     role: z.enum(["maker", "researcher", "operator"]).default("maker"),
     age: z.number().int().min(18, "Adult access only").default(28),
     newsletter: z.boolean().default(true),
@@ -13,7 +19,9 @@
       city: z.string().min(2).default("London"),
       seats: z.number().int().min(1).default(4),
     }),
-    links: z.array(z.string().url("Each link must be a URL")).default(["https://uniforma.dev"]),
+    links: z
+      .array(z.string().url("Each link must be a URL"))
+      .default(["https://uniforma.dev"]),
   });
 
   let value = {
@@ -37,7 +45,11 @@
 
   function loadExample() {
     const seeded = setAtPath(value, ["studio", "city"], "Tokyo");
-    const withLinks = setAtPath(seeded, ["links"], ["https://uniforma.dev", "https://example.com/docs"]);
+    const withLinks = setAtPath(
+      seeded,
+      ["links"],
+      ["https://uniforma.dev", "https://example.com/docs"],
+    );
     value = withLinks as typeof value;
   }
 
@@ -50,7 +62,8 @@
   <title>uniforma playground</title>
   <meta
     name="description"
-    content="Svelte-first forms built from Standard JSON Schema and validated with Standard Schema." />
+    content="Svelte-first forms built from Standard JSON Schema and validated with Standard Schema."
+  />
 </svelte:head>
 
 <div class="shell">
@@ -59,8 +72,9 @@
       <p class="eyebrow">uniforma</p>
       <h1>Schema-native forms for Svelte, without validator lock-in.</h1>
       <p class="lede">
-        Render from Standard JSON Schema. Validate with Standard Schema. Keep one schema object and let the
-        form stay typed from input to submitted output.
+        Render from Standard JSON Schema. Validate with Standard Schema. Keep
+        one schema object and let the form stay typed from input to submitted
+        output.
       </p>
     </div>
 
@@ -96,7 +110,9 @@
         </div>
 
         <div class="actions">
-          <button type="button" class="ghost" on:click={loadExample}>Load example</button>
+          <button type="button" class="ghost" on:click={loadExample}
+            >Load example</button
+          >
         </div>
       </div>
 
@@ -110,10 +126,11 @@
         let:errors
         let:valid
         let:validating
-        let:submitting>
+        let:submitting
+      >
         {#if getErrorsAtPath(errors, []).length > 0}
           <div class="notice error">
-            {#each getErrorsAtPath(errors, []) as message}
+            {#each getErrorsAtPath(errors, []) as message (message)}
               <p>{message}</p>
             {/each}
           </div>
@@ -122,7 +139,13 @@
         <div class="submit-row">
           <div class="status-line">
             <span>{valid ? "ready" : "needs attention"}</span>
-            <span>{validating ? "validating" : submitting ? "submitting" : "idle"}</span>
+            <span
+              >{validating
+                ? "validating"
+                : submitting
+                  ? "submitting"
+                  : "idle"}</span
+            >
           </div>
           <div class="actions">
             <button type="reset" class="ghost">Reset</button>
@@ -146,7 +169,8 @@
           <p class="label">Submitted output</p>
           <h2>Validated payload</h2>
         </div>
-        <pre>{submittedValue || "Submit the form to inspect validated output."}</pre>
+        <pre>{submittedValue ||
+            "Submit the form to inspect validated output."}</pre>
       </div>
     </section>
   </main>
