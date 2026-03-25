@@ -16,10 +16,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       currentValue = nextValue as number | null | undefined;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -33,13 +33,13 @@
     if (currentValue == null) {
       const nextValue = defaultValue<number>(schema.raw, currentValue ?? null);
       if (nextValue != null) {
-        void form.patch(path, nextValue);
+        void form.setPathValue(path, nextValue);
       }
     }
   });
 
   function updateValue(nextValue: string) {
-    void form.patch(path, nextValue === "" ? undefined : Number(nextValue));
+    void form.setPathValue(path, nextValue === "" ? undefined : Number(nextValue));
   }
 </script>
 
@@ -52,6 +52,6 @@
     value={currentValue ?? ""}
     oninput={(event) =>
       updateValue((event.currentTarget as HTMLInputElement).value)}
-    onblur={() => void form.blur(path)}
+    onblur={() => void form.touch(path)}
   />
 </Wrap>

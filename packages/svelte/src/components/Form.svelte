@@ -1,12 +1,13 @@
 <script lang="ts">
   import {
+    createFormStore,
     getErrorsAtPath,
+    type FormStore,
     type InferInput,
     type UniformaErrorTree,
     type UniformaSchema,
   } from "@uniforma/core";
 
-  import { createForm, type ValidationMode } from "../controller.ts";
   import {
     getComponentFromContainer,
     getFieldComponent,
@@ -31,7 +32,7 @@
     controls: controlsSnippet,
   }: FormComponentProps = $props();
 
-  let form = $state<ReturnType<typeof createForm> | null>(null);
+  let form = $state<FormStore<UniformaSchema> | null>(null);
   let currentValue = $state<InferInput<UniformaSchema> | undefined>(undefined);
   let currentErrors = $state<UniformaErrorTree | null>(null);
   let currentValid = $state(true);
@@ -41,9 +42,10 @@
 
   $effect.pre(() => {
     if (!form) {
-      form = createForm(schema, {
-        initialValue: value,
-        validateOn,
+      form = createFormStore({
+        schema,
+        ...(value !== undefined ? { initialValue: value } : {}),
+        ...(validateOn !== undefined ? { validateOn } : {}),
       });
       currentValue = value as InferInput<UniformaSchema> | undefined;
       lastSyncedPropValueKey = toValueKey(value);
@@ -55,7 +57,7 @@
       return;
     }
 
-    const unsubscribeValue = form.value.subscribe((nextValue) => {
+    const unsubscribeValue = form.$value.subscribe((nextValue) => {
       const nextValueKey = toValueKey(nextValue);
       currentValue = nextValue as InferInput<UniformaSchema>;
 
@@ -65,18 +67,18 @@
 
       onValueChange?.(nextValue as InferInput<UniformaSchema>);
     });
-    const unsubscribeErrors = form.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = form.$errors.subscribe((nextErrors) => {
       currentErrors = nextErrors;
     });
-    const unsubscribeValid = form.valid.subscribe((nextValid) => {
+    const unsubscribeValid = form.$valid.subscribe((nextValid) => {
       currentValid = nextValid;
     });
-    const unsubscribeValidating = form.validating.subscribe(
+    const unsubscribeValidating = form.$validating.subscribe(
       (nextValidating) => {
         currentValidating = nextValidating;
       },
     );
-    const unsubscribeSubmitting = form.submitting.subscribe(
+    const unsubscribeSubmitting = form.$submitting.subscribe(
       (nextSubmitting) => {
         currentSubmitting = nextSubmitting;
       },
@@ -174,7 +176,7 @@
           {form}
           schema={normalizedSchema}
           {components}
-          path={[]}
+          path=""
           props={rootProps}
         />
       {/if}

@@ -1,14 +1,15 @@
 import type {
+  DeepPath,
+  FormStore,
   InferInput,
   InferOutput,
   NormalizedSchemaNode,
   UniformaErrorTree,
   UniformaSchema,
+  ValidationMode,
 } from "@uniforma/core";
 
 import type { Component, Snippet } from "svelte";
-
-import type { UniformaForm, ValidationMode } from "./controller.ts";
 
 export type Props = Record<string, unknown>;
 export type SvelteComponentLike = Component<any>;
@@ -38,10 +39,10 @@ export interface FieldProps<
   TValue = unknown,
   TErrors = readonly string[] | UniformaErrorTree | null,
 > {
-  readonly form: UniformaForm<any>;
+  readonly form: FormStore<any>;
   readonly schema: NormalizedSchemaNode;
   readonly components: FormComponents;
-  readonly path: readonly (string | number)[];
+  readonly path: DeepPath;
   readonly value?: TValue;
   readonly errors?: TErrors;
   readonly props?: Props;

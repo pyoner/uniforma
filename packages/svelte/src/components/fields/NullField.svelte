@@ -9,10 +9,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       currentValue = nextValue;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -28,10 +28,10 @@
     type="checkbox"
     checked={currentValue === null}
     onchange={(event) =>
-      void form.patch(
+      void form.setPathValue(
         path,
         (event.currentTarget as HTMLInputElement).checked ? null : undefined,
       )}
-    onblur={() => void form.blur(path)}
+    onblur={() => void form.touch(path)}
   />
 </Wrap>

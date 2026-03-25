@@ -10,10 +10,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       currentValue = nextValue as string | null | undefined;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -27,13 +27,13 @@
     if (currentValue == null) {
       const nextValue = defaultValue<string>(schema.raw, currentValue ?? null);
       if (nextValue != null) {
-        void form.patch(path, nextValue);
+        void form.setPathValue(path, nextValue);
       }
     }
   });
 
   function updateValue(nextValue: string) {
-    void form.patch(path, nextValue);
+    void form.setPathValue(path, nextValue);
   }
 </script>
 
@@ -43,7 +43,7 @@
       value={String(currentValue ?? "")}
       onchange={(event) =>
         updateValue((event.currentTarget as HTMLSelectElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     >
       {#each schema.enumValues ?? [] as option (String(option))}
         <option value={String(option)}>{String(option)}</option>
@@ -55,7 +55,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {:else if schema.format === "date"}
     <input
@@ -63,7 +63,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {:else if schema.format === "time"}
     <input
@@ -71,7 +71,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {:else if schema.format === "email"}
     <input
@@ -79,7 +79,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {:else if schema.format === "url"}
     <input
@@ -87,7 +87,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {:else}
     <input
@@ -95,7 +95,7 @@
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.blur(path)}
+      onblur={() => void form.touch(path)}
     />
   {/if}
 </Wrap>

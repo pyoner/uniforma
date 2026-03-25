@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { joinPath } from "@uniforma/core";
+
   import {
     defaultValue,
     getComponentFromContainer,
@@ -16,10 +18,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       fieldValue = nextValue as unknown[] | undefined;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -51,7 +53,7 @@
 
   function removeItem(index: number) {
     const next = items.filter((_, itemIndex) => itemIndex !== index);
-    void form.patch(path, next);
+    void form.setPathValue(path, next);
   }
 
   function moveItem(index: number, position: number) {
@@ -63,12 +65,12 @@
     const current = next[index];
     next[index] = next[position];
     next[position] = current;
-    void form.patch(path, next);
+    void form.setPathValue(path, next);
   }
 
   function addItem() {
     const nextItem = schema.item ? defaultValue(schema.item.raw, null) : null;
-    void form.patch(path, [...items, nextItem]);
+    void form.setPathValue(path, [...items, nextItem]);
   }
 </script>
 
@@ -79,7 +81,7 @@
         {form}
         schema={itemSchema}
         {components}
-        path={[...path, index]}
+        path={joinPath(path, index)}
         props={itemFieldProps}
       />
 

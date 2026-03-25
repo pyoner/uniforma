@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { joinPath } from "@uniforma/core";
+
   import {
     getComponentFromContainer,
     getFieldComponent,
@@ -13,7 +15,7 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -43,7 +45,7 @@
       {form}
       schema={propertySchema}
       {components}
-      path={[...path, key]}
+      path={joinPath(path, key)}
       props={fieldProps}
     />
   {/each}

@@ -10,10 +10,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       currentValue = nextValue as string | null | undefined;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -27,7 +27,7 @@
     if (currentValue == null) {
       const nextValue = defaultValue<string>(schema.raw, currentValue ?? null);
       if (nextValue != null) {
-        void form.patch(path, nextValue);
+        void form.setPathValue(path, nextValue);
       }
     }
   });
@@ -37,7 +37,7 @@
   <textarea
     value={currentValue ?? ""}
     oninput={(event) =>
-      void form.patch(path, (event.currentTarget as HTMLTextAreaElement).value)}
-    onblur={() => void form.blur(path)}
+      void form.setPathValue(path, (event.currentTarget as HTMLTextAreaElement).value)}
+    onblur={() => void form.touch(path)}
   ></textarea>
 </Wrap>

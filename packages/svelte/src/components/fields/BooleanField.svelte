@@ -10,10 +10,10 @@
 
   $effect(() => {
     const field = form.field(path);
-    const unsubscribeValue = field.value.subscribe((nextValue) => {
+    const unsubscribeValue = field.$value.subscribe((nextValue) => {
       currentValue = nextValue as boolean | null | undefined;
     });
-    const unsubscribeErrors = field.errors.subscribe((nextErrors) => {
+    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
       fieldErrors = nextErrors;
     });
 
@@ -25,7 +25,7 @@
 
   $effect(() => {
     if (currentValue == null) {
-      void form.patch(
+      void form.setPathValue(
         path,
         defaultValue<boolean>(schema.raw, currentValue ?? null) ?? false,
       );
@@ -38,7 +38,7 @@
     type="checkbox"
     checked={Boolean(currentValue)}
     onchange={(event) =>
-      void form.patch(path, (event.currentTarget as HTMLInputElement).checked)}
-    onblur={() => void form.blur(path)}
+      void form.setPathValue(path, (event.currentTarget as HTMLInputElement).checked)}
+    onblur={() => void form.touch(path)}
   />
 </Wrap>
