@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "svelte-form/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "submodules/**"],
   },
   ...svelte.configs["flat/recommended"],
   {
