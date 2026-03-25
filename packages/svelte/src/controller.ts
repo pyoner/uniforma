@@ -1,26 +1,23 @@
-import { derived, get, writable, type Readable, type Writable } from "svelte/store";
+import type { Store } from "nanostores";
 
 import {
-  getDefaultValue,
-  getErrorsAtPath,
-  getInputJsonSchema,
-  hasErrors,
-  normalizeFormValue,
-  normalizeJsonSchema,
+  createFormStore,
   pathToKey,
-  setAtPath,
-  type FormPath,
+  type DeepPath,
+  type FormStore,
   type InferInput,
   type InferOutput,
   type JsonSchemaTarget,
   type JSONSchema,
   type NormalizedSchemaNode,
+  type SubmitResult,
   type UniformaErrorTree,
   type UniformaSchema,
-  validateSchema,
+  type ValidationMode,
+  type ValidationResult,
 } from "@uniforma/core";
 
-export type ValidationMode = "blur" | "change" | "submit";
+export type FormPath = DeepPath | readonly (string | number)[];
 
 export interface CreateFormOptions<TSchema extends UniformaSchema> {
   readonly initialValue?: InferInput<TSchema>;
@@ -29,9 +26,9 @@ export interface CreateFormOptions<TSchema extends UniformaSchema> {
 }
 
 export interface FieldController {
-  readonly value: Readable<unknown>;
-  readonly errors: Readable<readonly string[]>;
-  readonly touched: Readable<boolean>;
+  readonly value: Store<unknown>;
+  readonly errors: Store<readonly string[]>;
+  readonly touched: Store<boolean>;
   set: (nextValue: unknown) => void;
   blur: () => Promise<void>;
 }
@@ -40,13 +37,13 @@ export interface UniformaForm<TSchema extends UniformaSchema> {
   readonly schema: TSchema;
   readonly jsonSchema: JSONSchema;
   readonly normalizedSchema: NormalizedSchemaNode;
-  readonly value: Writable<InferInput<TSchema>>;
-  readonly errors: Readable<UniformaErrorTree | null>;
-  readonly touched: Readable<Readonly<Record<string, boolean>>>;
-  readonly validating: Readable<boolean>;
-  readonly submitting: Readable<boolean>;
-  readonly valid: Readable<boolean>;
-  readonly dirty: Readable<boolean>;
+  readonly value: Store<InferInput<TSchema>>;
+  readonly errors: Store<UniformaErrorTree | null>;
+  readonly touched: Store<Record<string, unknown>>;
+  readonly validating: Store<boolean>;
+  readonly submitting: Store<boolean>;
+  readonly valid: Store<boolean>;
+  readonly dirty: Store<boolean>;
   setValue: (nextValue: InferInput<TSchema>) => Promise<void>;
   patch: (path: FormPath, nextValue: unknown) => Promise<void>;
   blur: (path: FormPath) => Promise<void>;
@@ -56,177 +53,75 @@ export interface UniformaForm<TSchema extends UniformaSchema> {
   reset: (nextValue?: InferInput<TSchema>) => void;
 }
 
-export type ValidateReturn<TSchema extends UniformaSchema> = Awaited<
-  ReturnType<typeof validateSchema<TSchema>>
->;
-
-export type SubmitReturn<TSchema extends UniformaSchema> =
-  | { readonly success: true; readonly value: InferOutput<TSchema> }
-  | { readonly success: false; readonly errors: UniformaErrorTree };
+export type ValidateReturn<TSchema extends UniformaSchema> = ValidationResult<InferOutput<TSchema>>;
+export type SubmitReturn<TSchema extends UniformaSchema> = SubmitResult<TSchema>;
 
 export function createForm<TSchema extends UniformaSchema>(
   schema: TSchema,
   options: CreateFormOptions<TSchema> = {},
 ): UniformaForm<TSchema> {
-  const validateOn = normalizeModes(options.validateOn);
-  const jsonSchema = getInputJsonSchema(
+  const formStoreOptions = {
     schema,
-    options.jsonSchemaTarget ? { target: options.jsonSchemaTarget } : undefined,
-  );
-  const normalizedSchema = normalizeJsonSchema(jsonSchema);
-  const baseValue = (options.initialValue ??
-    getDefaultValue(jsonSchema) ??
-    {}) as InferInput<TSchema>;
-  const initialValue = normalizeFormValue(baseValue);
-
-  const value = writable(initialValue) as Writable<InferInput<TSchema>>;
-  const errors = writable<UniformaErrorTree | null>(null);
-  const touched = writable<Record<string, boolean>>({});
-  const validating = writable(false);
-  const submitting = writable(false);
+    ...(options.initialValue !== undefined ? { initialValue: options.initialValue } : {}),
+    ...(options.jsonSchemaTarget !== undefined
+      ? { jsonSchemaTarget: options.jsonSchemaTarget }
+      : {}),
+    ...(options.validateOn !== undefined ? { validateOn: options.validateOn } : {}),
+  };
+  const formStore = createFormStore(formStoreOptions);
   const fieldControllers = new Map<string, FieldController>();
 
-  const valid = derived(errors, ($errors) => !hasErrors($errors));
-  const dirty = derived(value, ($value) => JSON.stringify($value) !== JSON.stringify(initialValue));
-
-  async function runValidation() {
-    validating.set(true);
-    const result = await validateSchema(schema, normalizeFormValue(get(value)));
-    validating.set(false);
-
-    if (result.success) {
-      errors.set(null);
-    } else {
-      errors.set(result.errorTree);
-    }
-
-    return result;
-  }
-
-  async function setValue(nextValue: InferInput<TSchema>) {
-    value.set(nextValue);
-    if (validateOn.has("change")) {
-      await runValidation();
-    }
-  }
-
-  async function patch(path: FormPath, nextValue: unknown) {
-    value.update(($value) => setAtPath($value, path, nextValue));
-    if (validateOn.has("change")) {
-      await runValidation();
-    }
-  }
-
-  async function blur(path: FormPath) {
-    touched.update(($touched) => ({
-      ...$touched,
-      [pathToKey(path)]: true,
-    }));
-
-    if (validateOn.has("blur")) {
-      await runValidation();
-    }
-  }
-
   function field(path: FormPath): FieldController {
-    const key = pathToKey(path);
-    const existing = fieldControllers.get(key);
+    const normalizedPath = pathToKey(path);
+    const existing = fieldControllers.get(normalizedPath);
     if (existing) {
       return existing;
     }
 
+    const fieldStore = formStore.field(normalizedPath);
     const controller: FieldController = {
-      value: derived(value, ($value) => getValueAtPath($value, path)),
-      errors: derived(errors, ($errors) => getErrorsAtPath($errors, path)),
-      touched: derived(touched, ($touched) => Boolean($touched[pathToKey(path)])),
+      value: fieldStore.$value,
+      errors: fieldStore.$errors,
+      touched: fieldStore.$touched,
       set(nextValue) {
-        void patch(path, nextValue);
+        void fieldStore.set(nextValue);
       },
       blur() {
-        return blur(path);
+        return fieldStore.blur();
       },
     };
 
-    fieldControllers.set(key, controller);
+    fieldControllers.set(normalizedPath, controller);
     return controller;
-  }
-
-  async function validate() {
-    return runValidation();
-  }
-
-  async function submit(): Promise<SubmitReturn<TSchema>> {
-    submitting.set(true);
-    const result = await runValidation();
-    submitting.set(false);
-
-    if (!result.success) {
-      return {
-        success: false,
-        errors: result.errorTree,
-      };
-    }
-
-    value.set(result.value as InferInput<TSchema>);
-    return {
-      success: true,
-      value: result.value,
-    };
-  }
-
-  function reset(nextValue = initialValue) {
-    value.set(normalizeFormValue(nextValue));
-    errors.set(null);
-    touched.set({});
   }
 
   return {
     schema,
-    jsonSchema,
-    normalizedSchema,
-    value,
-    errors,
-    touched,
-    validating,
-    submitting,
-    valid,
-    dirty,
-    setValue,
-    patch,
-    blur,
+    jsonSchema: formStore.jsonSchema,
+    normalizedSchema: formStore.normalizedSchema,
+    value: formStore.$value,
+    errors: formStore.$errors,
+    touched: formStore.$touched,
+    validating: formStore.$validating,
+    submitting: formStore.$submitting,
+    valid: formStore.$valid,
+    dirty: formStore.$dirty,
+    setValue: formStore.setValue,
+    patch(path, nextValue) {
+      return formStore.setPathValue(pathToKey(path), nextValue);
+    },
+    blur(path) {
+      return formStore.touch(pathToKey(path));
+    },
     field,
-    validate,
-    submit,
-    reset,
+    validate: formStore.validate,
+    submit: formStore.submit,
+    reset: formStore.reset,
   };
 }
 
-function normalizeModes(
-  value: CreateFormOptions<UniformaSchema>["validateOn"],
-): Set<ValidationMode> {
-  if (!value) {
-    return new Set(["submit"]);
-  }
-
-  return new Set(Array.isArray(value) ? value : [value]);
-}
-
-function getValueAtPath(value: unknown, path: FormPath): unknown {
-  let cursor = value;
-
-  for (const segment of path) {
-    if (cursor == null || typeof cursor !== "object") {
-      return undefined;
-    }
-
-    cursor = (cursor as Record<string, unknown>)[String(segment)];
-  }
-
-  return cursor;
-}
-
 export type {
-  FormPath,
+  DeepPath,
   InferInput,
   InferOutput,
   JsonSchemaTarget,
@@ -234,4 +129,7 @@ export type {
   NormalizedSchemaNode,
   UniformaErrorTree,
   UniformaSchema,
+  ValidationMode,
 };
+
+export type { FormStore } from "@uniforma/core";

@@ -23,7 +23,9 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@standard-schema/spec": "catalog:"
+    "@nanostores/deepmap": "catalog:",
+    "@standard-schema/spec": "catalog:",
+    "nanostores": "catalog:"
   },
   "devDependencies": {
     "zod": "catalog:"

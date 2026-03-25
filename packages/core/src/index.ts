@@ -1,8 +1,12 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
+import { deepMap } from "@nanostores/deepmap";
+import { atom, computed, type Store } from "nanostores";
 
 export type JsonSchemaTarget = StandardJSONSchemaV1.Target;
 export type PathKey = string | number;
 export type FormPath = readonly PathKey[];
+export type DeepPath = string;
+export type PathInput = DeepPath | FormPath;
 
 export interface JSONSchema {
   readonly type?: string | readonly string[];
@@ -90,6 +94,64 @@ export interface ValidationOptions {
   readonly libraryOptions?: Record<string, unknown>;
 }
 
+export type ValidationMode = "blur" | "change" | "submit";
+
+export interface CreateFormStoreOptions<TSchema extends UniformaSchema> {
+  readonly schema: TSchema;
+  readonly initialValue?: InferInput<TSchema>;
+  readonly jsonSchemaTarget?: JsonSchemaTarget;
+  readonly validateOn?: ValidationMode | readonly ValidationMode[];
+  readonly libraryOptions?: Record<string, unknown>;
+}
+
+export interface FormFieldStore {
+  readonly path: DeepPath;
+  readonly $value: Store<unknown>;
+  readonly $errors: Store<readonly string[]>;
+  readonly $touched: Store<boolean>;
+  set: (value: unknown) => Promise<void>;
+  blur: () => Promise<void>;
+}
+
+export interface SubmitSuccess<TSchema extends UniformaSchema> {
+  readonly success: true;
+  readonly value: InferOutput<TSchema>;
+}
+
+export interface SubmitFailure {
+  readonly success: false;
+  readonly errors: UniformaErrorTree;
+}
+
+export type SubmitResult<TSchema extends UniformaSchema> = SubmitSuccess<TSchema> | SubmitFailure;
+
+export interface FormStore<TSchema extends UniformaSchema> {
+  readonly schema: TSchema;
+  readonly jsonSchema: JSONSchema;
+  readonly normalizedSchema: NormalizedSchemaNode;
+  readonly $value: Store<InferInput<TSchema>>;
+  readonly $errors: Store<UniformaErrorTree | null>;
+  readonly $touched: Store<Record<string, unknown>>;
+  readonly $validating: Store<boolean>;
+  readonly $submitting: Store<boolean>;
+  readonly $valid: Store<boolean>;
+  readonly $dirty: Store<boolean>;
+  getValue: () => InferInput<TSchema>;
+  getPathValue: (path: DeepPath) => unknown;
+  setValue: (value: InferInput<TSchema>) => Promise<void>;
+  setPathValue: (path: DeepPath, value: unknown) => Promise<void>;
+  touch: (path: DeepPath) => Promise<void>;
+  field: (path: DeepPath) => FormFieldStore;
+  validate: () => Promise<ValidationResult<InferOutput<TSchema>>>;
+  submit: () => Promise<SubmitResult<TSchema>>;
+  reset: (value?: InferInput<TSchema>) => void;
+}
+
+type InternalValueStore<T> = Store<T> & {
+  set: (value: T) => void;
+  setKey?: ((path: string, value: unknown) => void) | undefined;
+};
+
 const DEFAULT_TARGET: JsonSchemaTarget = "draft-2020-12";
 
 export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
@@ -170,7 +232,7 @@ export function issuesToErrorTree(issues: readonly UniformaIssue[]): UniformaErr
 
 export function getErrorsAtPath(
   errorTree: UniformaErrorTree | null | undefined,
-  path: FormPath,
+  path: PathInput,
 ): readonly string[] {
   const node = getErrorTreeAtPath(errorTree, path);
   return node?._errors ?? [];
@@ -178,7 +240,7 @@ export function getErrorsAtPath(
 
 export function getErrorTreeAtPath(
   errorTree: UniformaErrorTree | null | undefined,
-  path: FormPath,
+  path: PathInput,
 ): UniformaErrorTree | null {
   if (!errorTree) {
     return null;
@@ -186,7 +248,7 @@ export function getErrorTreeAtPath(
 
   let cursor: UniformaErrorTree | undefined = errorTree;
 
-  for (const segment of path) {
+  for (const segment of pathToSegments(path)) {
     cursor = cursor.children?.[String(segment)];
     if (!cursor) {
       return null;
@@ -296,10 +358,59 @@ export function normalizeFormValue<T>(value: T): T {
   return value;
 }
 
-export function getAtPath(value: unknown, path: FormPath): unknown {
+export function getAtPath(value: unknown, path: PathInput): unknown {
+  for (const segment of pathToSegments(path)) {
+    if (value == null || typeof value !== "object") {
+      return undefined;
+    }
+
+    value = (value as Record<string, unknown>)[String(segment)];
+  }
+
+  return value;
+}
+
+export function setAtPath<T>(value: T, path: PathInput, nextValue: unknown): T {
+  const segments = pathToSegments(path);
+  if (segments.length === 0) {
+    return nextValue as T;
+  }
+
+  return setAtPathSegments(value, segments, nextValue);
+}
+
+export function pathToKey(path: PathInput): DeepPath {
+  return typeof path === "string" ? path : segmentsToPath(path);
+}
+
+export function joinPath(base: DeepPath, segment: PathKey): DeepPath {
+  if (typeof segment === "number") {
+    return `${base}[${segment}]`;
+  }
+
+  return base ? `${base}.${segment}` : segment;
+}
+
+export function pathToSegments(path: PathInput): FormPath {
+  if (Array.isArray(path)) {
+    return path;
+  }
+
+  if (path === "") {
+    return [];
+  }
+
+  return parseDeepPath(path as DeepPath);
+}
+
+export function normalizePath(path: PathInput): DeepPath {
+  return pathToKey(path);
+}
+
+function getAtPathInternal(value: unknown, path: PathInput): unknown {
   let cursor = value;
 
-  for (const segment of path) {
+  for (const segment of pathToSegments(path)) {
     if (cursor == null || typeof cursor !== "object") {
       return undefined;
     }
@@ -310,29 +421,256 @@ export function getAtPath(value: unknown, path: FormPath): unknown {
   return cursor;
 }
 
-export function setAtPath<T>(value: T, path: FormPath, nextValue: unknown): T {
-  if (path.length === 0) {
-    return nextValue as T;
+export function createFormStore<TSchema extends UniformaSchema>(
+  options: CreateFormStoreOptions<TSchema>,
+): FormStore<TSchema> {
+  const validateOn = normalizeValidationModes(options.validateOn);
+  const jsonSchemaOptions: JsonSchemaOptions = {
+    ...(options.jsonSchemaTarget !== undefined ? { target: options.jsonSchemaTarget } : {}),
+    ...(options.libraryOptions !== undefined ? { libraryOptions: options.libraryOptions } : {}),
+  };
+  const jsonSchema = getInputJsonSchema(options.schema, jsonSchemaOptions);
+  const normalizedSchema = normalizeJsonSchema(jsonSchema);
+  const baseValue = (options.initialValue ??
+    getDefaultValue(jsonSchema) ??
+    {}) as InferInput<TSchema>;
+  const initialValue = cloneValue(normalizeFormValue(baseValue));
+
+  const valueStore = createValueStore(initialValue);
+  const errorsStore = atom<UniformaErrorTree | null>(null);
+  const touchedStore = deepMap<Record<string, unknown>>({});
+  const validatingStore = atom(false);
+  const submittingStore = atom(false);
+  const validStore = computed(errorsStore, (errors) => !hasErrors(errors));
+  const dirtyStore = computed(
+    valueStore as Store<InferInput<TSchema>>,
+    (value) => serializeValue(value) !== serializeValue(initialValue),
+  );
+  const fieldStores = new Map<DeepPath, FormFieldStore>();
+
+  async function runValidation() {
+    validatingStore.set(true);
+    const validationOptions: ValidationOptions =
+      options.libraryOptions !== undefined ? { libraryOptions: options.libraryOptions } : {};
+    const result = await validateSchema(
+      options.schema,
+      normalizeFormValue(getCurrentValue()),
+      validationOptions,
+    );
+    validatingStore.set(false);
+
+    errorsStore.set(result.success ? null : result.errorTree);
+    return result;
   }
 
+  async function setValue(nextValue: InferInput<TSchema>) {
+    setCurrentValue(normalizeFormValue(nextValue));
+    if (validateOn.has("change")) {
+      await runValidation();
+    }
+  }
+
+  async function setPathValue(path: DeepPath, nextValue: unknown) {
+    if (path === "") {
+      setCurrentValue(nextValue as InferInput<TSchema>);
+    } else if (isDeepValueStore(valueStore)) {
+      valueStore.setKey(path, nextValue);
+    } else {
+      valueStore.set(setAtPath(valueStore.get(), path, nextValue) as InferInput<TSchema>);
+    }
+
+    if (validateOn.has("change")) {
+      await runValidation();
+    }
+  }
+
+  async function touch(path: DeepPath) {
+    touchedStore.setKey(touchedPath(path) as never, true as never);
+
+    if (validateOn.has("blur")) {
+      await runValidation();
+    }
+  }
+
+  function field(path: DeepPath): FormFieldStore {
+    const normalizedPath = pathToKey(path);
+    const existing = fieldStores.get(normalizedPath);
+    if (existing) {
+      return existing;
+    }
+
+    const fieldStore: FormFieldStore = {
+      path: normalizedPath,
+      $value: computed(valueStore as Store<InferInput<TSchema>>, (value) =>
+        getAtPathInternal(value, normalizedPath),
+      ),
+      $errors: computed(errorsStore, (errors) => getErrorsAtPath(errors, normalizedPath)),
+      $touched: computed(touchedStore, (touched) =>
+        Boolean(getAtPathInternal(touched, touchedPath(normalizedPath))),
+      ),
+      set(nextValue) {
+        return setPathValue(normalizedPath, nextValue);
+      },
+      blur() {
+        return touch(normalizedPath);
+      },
+    };
+
+    fieldStores.set(normalizedPath, fieldStore);
+    return fieldStore;
+  }
+
+  async function submit(): Promise<SubmitResult<TSchema>> {
+    submittingStore.set(true);
+    const result = await runValidation();
+    submittingStore.set(false);
+
+    if (!result.success) {
+      return {
+        success: false,
+        errors: result.errorTree,
+      };
+    }
+
+    setCurrentValue(result.value as InferInput<TSchema>);
+    return {
+      success: true,
+      value: result.value,
+    };
+  }
+
+  function reset(nextValue = initialValue) {
+    setCurrentValue(normalizeFormValue(nextValue));
+    errorsStore.set(null);
+    touchedStore.set({});
+  }
+
+  function getCurrentValue() {
+    return valueStore.get() as InferInput<TSchema>;
+  }
+
+  function setCurrentValue(nextValue: InferInput<TSchema>) {
+    valueStore.set(cloneValue(nextValue) as InferInput<TSchema>);
+  }
+
+  return {
+    schema: options.schema,
+    jsonSchema,
+    normalizedSchema,
+    $value: valueStore as Store<InferInput<TSchema>>,
+    $errors: errorsStore,
+    $touched: touchedStore,
+    $validating: validatingStore,
+    $submitting: submittingStore,
+    $valid: validStore,
+    $dirty: dirtyStore,
+    getValue: getCurrentValue,
+    getPathValue(path) {
+      return getAtPathInternal(getCurrentValue(), path);
+    },
+    setValue,
+    setPathValue,
+    touch,
+    field,
+    validate: runValidation,
+    submit,
+    reset,
+  };
+}
+
+function setAtPathSegments<T>(value: T, path: FormPath, nextValue: unknown): T {
   const [head, ...tail] = path;
   const key = typeof head === "number" ? head : String(head);
 
   if (Array.isArray(value)) {
     const clone = [...value];
-    clone[key as number] = setAtPath(clone[key as number], tail, nextValue);
+    clone[key as number] = setAtPathSegments(clone[key as number], tail, nextValue);
     return clone as T;
   }
 
   const base = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
     ...base,
-    [key]: setAtPath(base[key], tail, nextValue),
+    [key]: tail.length === 0 ? nextValue : setAtPathSegments(base[key], tail, nextValue),
   } as T;
 }
 
-export function pathToKey(path: FormPath): string {
-  return path.map(String).join(".");
+function createValueStore<T>(initialValue: T): InternalValueStore<T> {
+  return isDeepMapValue(initialValue)
+    ? (deepMap(
+        cloneValue(initialValue) as Record<string, unknown> | unknown[],
+      ) as unknown as InternalValueStore<T>)
+    : (atom(cloneValue(initialValue)) as InternalValueStore<T>);
+}
+
+function isDeepMapValue(value: unknown): value is Record<string, unknown> | unknown[] {
+  return Array.isArray(value) || (!!value && typeof value === "object");
+}
+
+function isDeepValueStore<T>(
+  store: InternalValueStore<T>,
+): store is InternalValueStore<T> & { setKey: (path: string, value: unknown) => void } {
+  return typeof store.setKey === "function";
+}
+
+function normalizeValidationModes(
+  value: CreateFormStoreOptions<UniformaSchema>["validateOn"],
+): Set<ValidationMode> {
+  if (!value) {
+    return new Set(["submit"]);
+  }
+
+  return new Set(Array.isArray(value) ? value : [value]);
+}
+
+function touchedPath(path: DeepPath): DeepPath {
+  return path === "" ? "$" : path;
+}
+
+function segmentsToPath(path: FormPath): DeepPath {
+  return path.reduce<DeepPath>((result, segment) => joinPath(result, segment), "");
+}
+
+function parseDeepPath(path: DeepPath): FormPath {
+  const segments: PathKey[] = [];
+  let current = "";
+
+  for (let index = 0; index < path.length; index += 1) {
+    const char = path[index];
+
+    if (char === ".") {
+      if (current) {
+        segments.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    if (char === "[") {
+      if (current) {
+        segments.push(current);
+        current = "";
+      }
+
+      const closing = path.indexOf("]", index);
+      const token = path.slice(index + 1, closing);
+      segments.push(/^\d+$/.test(token) ? Number(token) : token);
+      index = closing;
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    segments.push(current);
+  }
+
+  return segments;
+}
+
+function serializeValue(value: unknown): string {
+  return JSON.stringify(cloneValue(value));
 }
 
 function normalizeIssuePath(path: StandardSchemaV1.Issue["path"]): FormPath {

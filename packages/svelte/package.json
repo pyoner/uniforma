@@ -30,7 +30,8 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@uniforma/core": "workspace:*"
+    "@uniforma/core": "workspace:*",
+    "nanostores": "catalog:"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "catalog:",
