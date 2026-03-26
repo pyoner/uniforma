@@ -1,10 +1,10 @@
 import type {
   DeepPath,
+  FailureResult,
   FormStore,
   InferInput,
   InferOutput,
   NormalizedSchemaNode,
-  UniformaErrorTree,
   UniformaSchema,
   ValidationMode,
 } from "@uniforma/core";
@@ -35,10 +35,7 @@ export interface FormComponents {
   fields: FieldComponents;
 }
 
-export interface FieldProps<
-  TValue = unknown,
-  TErrors = readonly string[] | UniformaErrorTree | null,
-> {
+export interface FieldProps<TValue = unknown, TErrors = readonly string[] | FailureResult | null> {
   readonly form: FormStore<any>;
   readonly schema: NormalizedSchemaNode;
   readonly components: FormComponents;
@@ -49,7 +46,7 @@ export interface FieldProps<
 }
 
 export interface FormRenderState {
-  readonly errors: UniformaErrorTree | null;
+  readonly errors: FailureResult | null;
   readonly rootErrors: readonly string[];
   readonly valid: boolean;
   readonly validating: boolean;
@@ -67,4 +64,4 @@ export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSch
   readonly controls?: Snippet<[FormRenderState]> | undefined;
 }
 
-export type Errors = UniformaErrorTree | readonly string[] | null;
+export type Errors = FailureResult | readonly string[] | null;

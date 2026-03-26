@@ -50,5 +50,5 @@ test("validates with Standard Schema and returns a normalized failure shape", as
     throw new Error("expected validation to fail");
   }
 
-  expect(result.issues).toHaveLength(2);
+  expect(result.error.issues).toHaveLength(2);
 });

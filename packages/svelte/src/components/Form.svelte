@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
     createFormStore,
-    getErrorsAtPath,
+    type FailureResult,
+    getMessagesAtPath,
     type FormStore,
     type InferInput,
-    type UniformaErrorTree,
     type UniformaSchema,
   } from "@uniforma/core";
 
@@ -34,7 +34,7 @@
 
   let form = $state<FormStore<UniformaSchema> | null>(null);
   let currentValue = $state<InferInput<UniformaSchema> | undefined>(undefined);
-  let currentErrors = $state<UniformaErrorTree | null>(null);
+  let currentErrors = $state<FailureResult | null>(null);
   let currentValid = $state(true);
   let currentValidating = $state(false);
   let currentSubmitting = $state(false);
@@ -109,7 +109,7 @@
   );
   const renderState = $derived<FormRenderState>({
     errors: currentErrors,
-    rootErrors: getErrorsAtPath(currentErrors, []),
+    rootErrors: getMessagesAtPath(currentErrors, ""),
     valid: currentValid,
     validating: currentValidating,
     submitting: currentSubmitting,

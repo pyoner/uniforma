@@ -1,6 +1,5 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 
-import { normalizeIssues, issuesToErrorTree } from "./errors.ts";
 import { cloneValue } from "./values.ts";
 import type {
   InferOutput,
@@ -45,19 +44,15 @@ export async function validateSchema<TSchema extends StandardSchemaV1>(
   });
 
   if (result.issues) {
-    const issues = normalizeIssues(result.issues);
     return {
       success: false,
-      issues,
-      errorTree: issuesToErrorTree(issues),
+      error: result,
     };
   }
 
   return {
     success: true,
     value: result.value as InferOutput<TSchema>,
-    issues: [],
-    errorTree: null,
   };
 }
 

@@ -1,10 +1,4 @@
-export {
-  getErrorsAtPath,
-  getErrorTreeAtPath,
-  hasErrors,
-  issuesToErrorTree,
-  normalizeIssues,
-} from "./errors.ts";
+export { getIssuesAtPath, getMessagesAtPath, hasErrors } from "./errors.ts";
 export { createFormStore } from "./form-store.ts";
 export { joinPath, normalizePath, pathToKey, pathToSegments, touchedPath } from "./paths.ts";
 export {
@@ -19,6 +13,7 @@ export { cloneValue, getAtPath, normalizeFormValue, serializeValue, setAtPath } 
 export type {
   CreateFormStoreOptions,
   DeepPath,
+  FailureResult,
   FormFieldStore,
   FormPath,
   FormStore,
@@ -34,8 +29,6 @@ export type {
   SubmitFailure,
   SubmitResult,
   SubmitSuccess,
-  UniformaErrorTree,
-  UniformaIssue,
   UniformaSchema,
   ValidationFailure,
   ValidationMode,

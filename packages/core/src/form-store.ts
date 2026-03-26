@@ -1,7 +1,7 @@
 import { deepMap } from "@nanostores/deepmap";
 import { atom, computed } from "nanostores";
 
-import { getErrorsAtPath, hasErrors } from "./errors.ts";
+import { getMessagesAtPath, hasErrors } from "./errors.ts";
 import { normalizePath, touchedPath } from "./paths.ts";
 import {
   getDefaultValue,
@@ -16,13 +16,13 @@ import type {
   FormFieldStore,
   InferInput,
   InternalValueStore,
-  UniformaErrorTree,
   SubmitResult,
   FormStore,
   UniformaSchema,
   ValidationMode,
   ValidationOptions,
 } from "./types.ts";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 export function createFormStore<TSchema extends UniformaSchema>(
   options: CreateFormStoreOptions<TSchema>,
@@ -39,7 +39,7 @@ export function createFormStore<TSchema extends UniformaSchema>(
   const initialValue = cloneValue(normalizeFormValue(baseValue));
 
   const valueStore = createValueStore(initialValue);
-  const errorsStore = atom<UniformaErrorTree | null>(null);
+  const errorsStore = atom<StandardSchemaV1.FailureResult | null>(null);
   const touchedStore = deepMap<Record<string, unknown>>({});
   const validatingStore = atom(false);
   const submittingStore = atom(false);
@@ -60,7 +60,7 @@ export function createFormStore<TSchema extends UniformaSchema>(
       validationOptions,
     );
     validatingStore.set(false);
-    errorsStore.set(result.success ? null : result.errorTree);
+    errorsStore.set(result.success ? null : result.error);
     return result;
   }
 
@@ -102,7 +102,7 @@ export function createFormStore<TSchema extends UniformaSchema>(
     const nextFieldStore: FormFieldStore = {
       path: normalizedPath,
       $value: computed(valueStore, (value) => getAtPath(value, normalizedPath)),
-      $errors: computed(errorsStore, (errors) => getErrorsAtPath(errors, normalizedPath)),
+      $errors: computed(errorsStore, (errors) => getMessagesAtPath(errors, normalizedPath)),
       $touched: computed(touchedStore, (touched) =>
         Boolean(getAtPath(touched, touchedPath(normalizedPath))),
       ),
@@ -126,7 +126,7 @@ export function createFormStore<TSchema extends UniformaSchema>(
     if (!result.success) {
       return {
         success: false,
-        errors: result.errorTree,
+        error: result.error,
       };
     }
 

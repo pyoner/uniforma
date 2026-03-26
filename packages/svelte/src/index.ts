@@ -1,4 +1,4 @@
-export { createFormStore } from "@uniforma/core";
+export { createFormStore, getMessagesAtPath } from "@uniforma/core";
 import { defaultFormComponents as components } from "./components/index.ts";
 import Form from "./components/Form.svelte";
 import * as extra from "./components/fields/extra/index.ts";
@@ -24,7 +24,6 @@ export type {
   JSONSchema,
   NormalizedSchemaNode,
   SubmitResult,
-  UniformaErrorTree,
   UniformaSchema,
   ValidationMode,
   ValidationResult,

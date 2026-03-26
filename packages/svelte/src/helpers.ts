@@ -1,17 +1,17 @@
 import {
+  type FailureResult,
   getDefaultValue as getCoreDefaultValue,
-  getErrorsAtPath,
-  getErrorTreeAtPath,
+  getMessagesAtPath,
   getAtPath,
   normalizeFormValue,
-  type FormPath,
+  type DeepPath,
   type JSONSchema,
   type NormalizedSchemaNode,
 } from "@uniforma/core";
 
 import type { FormComponents, Props, SvelteComponentProps } from "./types.ts";
 
-export function createProps<TValue = unknown, TErrors = readonly string[] | null>(
+export function createProps<TValue = unknown, TErrors = readonly string[] | FailureResult | null>(
   value: TValue | null = null,
 ) {
   return {
@@ -19,7 +19,7 @@ export function createProps<TValue = unknown, TErrors = readonly string[] | null
     errors: null as TErrors | null,
     schema: undefined,
     components: undefined,
-    path: [] as FormPath,
+    path: "" as DeepPath,
     form: undefined,
     props: {},
   };
@@ -90,14 +90,8 @@ export function getFieldComponent(
   }
 }
 
-export function getFieldErrors(
-  errorTree: ReturnType<typeof getErrorTreeAtPath>,
-): readonly string[] {
-  if (Array.isArray(errorTree)) {
-    return errorTree;
-  }
-
-  return errorTree?._errors ?? [];
+export function getFieldErrors(errorTree: readonly string[] | null | undefined): readonly string[] {
+  return errorTree ?? [];
 }
 
-export { getAtPath, getErrorTreeAtPath, getErrorsAtPath };
+export { getAtPath, getMessagesAtPath };

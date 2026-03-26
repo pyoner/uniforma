@@ -1,96 +1,51 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import { pathToSegments } from "./paths.ts";
-import type { MutableErrorTree, PathInput, UniformaErrorTree, UniformaIssue } from "./types.ts";
+import type { PathInput } from "./types.ts";
 
-export function normalizeIssues(
-  issues: readonly StandardSchemaV1.Issue[],
-): readonly UniformaIssue[] {
-  return issues.map((issue) => ({
-    message: issue.message,
-    path: normalizeIssuePath(issue.path),
-    raw: issue,
-  }));
-}
-
-export function issuesToErrorTree(issues: readonly UniformaIssue[]): UniformaErrorTree {
-  const root: MutableErrorTree = {};
-
-  for (const issue of issues) {
-    let cursor = root;
-
-    for (const segment of issue.path) {
-      const key = String(segment);
-      cursor.children ??= {};
-      cursor.children[key] ??= {};
-      cursor = cursor.children[key]!;
-    }
-
-    cursor._errors ??= [];
-    cursor._errors.push(issue.message);
+export function getIssuesAtPath(
+  failure: StandardSchemaV1.FailureResult | null | undefined,
+  path: PathInput,
+): readonly StandardSchemaV1.Issue[] {
+  if (!failure) {
+    return [];
   }
 
-  return freezeErrorTree(root);
+  const expected = pathToSegments(path);
+  return failure.issues.filter((issue) => pathMatches(issue.path, expected));
 }
 
-export function getErrorsAtPath(
-  errorTree: UniformaErrorTree | null | undefined,
+export function getMessagesAtPath(
+  failure: StandardSchemaV1.FailureResult | null | undefined,
   path: PathInput,
 ): readonly string[] {
-  return getErrorTreeAtPath(errorTree, path)?._errors ?? [];
+  return getIssuesAtPath(failure, path).map((issue) => issue.message);
 }
 
-export function getErrorTreeAtPath(
-  errorTree: UniformaErrorTree | null | undefined,
-  path: PathInput,
-): UniformaErrorTree | null {
-  if (!errorTree) {
-    return null;
-  }
-
-  let cursor: UniformaErrorTree | undefined = errorTree;
-
-  for (const segment of pathToSegments(path)) {
-    cursor = cursor.children?.[String(segment)];
-    if (!cursor) {
-      return null;
-    }
-  }
-
-  return cursor;
+export function hasErrors(failure: StandardSchemaV1.FailureResult | null | undefined): boolean {
+  return (failure?.issues.length ?? 0) > 0;
 }
 
-export function hasErrors(errorTree: UniformaErrorTree | null | undefined): boolean {
-  if (!errorTree) {
+function pathMatches(
+  issuePath: StandardSchemaV1.Issue["path"],
+  expected: readonly (string | number)[],
+): boolean {
+  const actual = normalizeIssuePath(issuePath);
+  if (actual.length !== expected.length) {
     return false;
   }
 
-  if ((errorTree._errors?.length ?? 0) > 0) {
-    return true;
-  }
-
-  return Object.values(errorTree.children ?? {}).some((child) => hasErrors(child));
+  return actual.every((segment, index) => segment === expected[index]);
 }
 
-function normalizeIssuePath(path: StandardSchemaV1.Issue["path"]): UniformaIssue["path"] {
+function normalizeIssuePath(path: StandardSchemaV1.Issue["path"]): readonly (string | number)[] {
   if (!path) {
     return [];
   }
 
   return path.map((segment) =>
-    typeof segment === "object" && segment !== null && "key" in segment ? segment.key : segment,
-  ) as UniformaIssue["path"];
-}
-
-function freezeErrorTree(node: MutableErrorTree): UniformaErrorTree {
-  const children = node.children
-    ? Object.fromEntries(
-        Object.entries(node.children).map(([key, child]) => [key, freezeErrorTree(child)]),
-      )
-    : undefined;
-
-  return {
-    _errors: node._errors,
-    children,
-  };
+    typeof segment === "object" && segment !== null && "key" in segment
+      ? (segment.key as string | number)
+      : (segment as string | number),
+  );
 }

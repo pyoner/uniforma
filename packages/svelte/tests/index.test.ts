@@ -1,7 +1,7 @@
 import { expect, test } from "vite-plus/test";
 import { z } from "zod";
 
-import { createFormStore } from "../src/index.ts";
+import { createFormStore, getMessagesAtPath } from "../src/index.ts";
 
 test("creates defaults from Standard JSON Schema and validates on submit", async () => {
   const schema = z.object({
@@ -20,7 +20,7 @@ test("creates defaults from Standard JSON Schema and validates on submit", async
   const result = await form.submit();
 
   expect(result.success).toBe(false);
-  expect(form.$errors.get()?.children?.name?._errors).toContain(
+  expect(getMessagesAtPath(form.$errors.get(), "name")).toContain(
     "Too small: expected string to have >=2 characters",
   );
 });

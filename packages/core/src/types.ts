@@ -30,17 +30,7 @@ export type UniformaSchema<Input = unknown, Output = Input> = StandardSchemaV1<I
 
 export type InferInput<TSchema extends StandardSchemaV1> = StandardSchemaV1.InferInput<TSchema>;
 export type InferOutput<TSchema extends StandardSchemaV1> = StandardSchemaV1.InferOutput<TSchema>;
-
-export interface UniformaIssue {
-  readonly message: string;
-  readonly path: FormPath;
-  readonly raw: StandardSchemaV1.Issue;
-}
-
-export interface UniformaErrorTree {
-  readonly _errors?: readonly string[] | undefined;
-  readonly children?: Readonly<Record<string, UniformaErrorTree>> | undefined;
-}
+export type FailureResult = StandardSchemaV1.FailureResult;
 
 export type SchemaKind =
   | "array"
@@ -70,15 +60,11 @@ export interface NormalizedSchemaNode {
 export interface ValidationSuccess<TOutput> {
   readonly success: true;
   readonly value: TOutput;
-  readonly issues: readonly [];
-  readonly errorTree: null;
 }
 
 export interface ValidationFailure {
   readonly success: false;
-  readonly value?: undefined;
-  readonly issues: readonly UniformaIssue[];
-  readonly errorTree: UniformaErrorTree;
+  readonly error: FailureResult;
 }
 
 export type ValidationResult<TOutput> = ValidationSuccess<TOutput> | ValidationFailure;
@@ -118,7 +104,7 @@ export interface SubmitSuccess<TSchema extends UniformaSchema> {
 
 export interface SubmitFailure {
   readonly success: false;
-  readonly errors: UniformaErrorTree;
+  readonly error: FailureResult;
 }
 
 export type SubmitResult<TSchema extends UniformaSchema> = SubmitSuccess<TSchema> | SubmitFailure;
@@ -128,7 +114,7 @@ export interface FormStore<TSchema extends UniformaSchema> {
   readonly jsonSchema: JSONSchema;
   readonly normalizedSchema: NormalizedSchemaNode;
   readonly $value: Store<InferInput<TSchema>>;
-  readonly $errors: Store<UniformaErrorTree | null>;
+  readonly $errors: Store<FailureResult | null>;
   readonly $touched: Store<Record<string, unknown>>;
   readonly $validating: Store<boolean>;
   readonly $submitting: Store<boolean>;
@@ -143,11 +129,6 @@ export interface FormStore<TSchema extends UniformaSchema> {
   validate: () => Promise<ValidationResult<InferOutput<TSchema>>>;
   submit: () => Promise<SubmitResult<TSchema>>;
   reset: (value?: InferInput<TSchema>) => void;
-}
-
-export interface MutableErrorTree {
-  _errors?: string[];
-  children?: Record<string, MutableErrorTree>;
 }
 
 export type MutableNormalizedNode = {
