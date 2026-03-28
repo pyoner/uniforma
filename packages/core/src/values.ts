@@ -1,3 +1,5 @@
+import { getPath as getDeepMapPath, setPath as setDeepMapPath } from "@nanostores/deepmap";
+
 import { pathToSegments } from "./paths.ts";
 import type { FormPath, PathInput } from "./types.ts";
 
@@ -17,6 +19,10 @@ export function normalizeFormValue<T>(value: T): T {
 }
 
 export function getAtPath(value: unknown, path: PathInput): unknown {
+  if (typeof path === "string" && isDeepMapCompatiblePath(path)) {
+    return getDeepMapPath(path as never, value as never) as unknown;
+  }
+
   let cursor = value;
 
   for (const segment of pathToSegments(path)) {
@@ -31,6 +37,14 @@ export function getAtPath(value: unknown, path: PathInput): unknown {
 }
 
 export function setAtPath<T>(value: T, path: PathInput, nextValue: unknown): T {
+  if (
+    typeof path === "string" &&
+    isDeepMapCompatiblePath(path) &&
+    (path === "" || isPathContainer(value))
+  ) {
+    return setDeepMapPath(path as never, nextValue as never, value as never) as T;
+  }
+
   const segments = pathToSegments(path);
   if (segments.length === 0) {
     return nextValue as T;
@@ -63,4 +77,29 @@ function setAtPathSegments<T>(value: T, path: FormPath, nextValue: unknown): T {
     ...base,
     [key]: tail.length === 0 ? nextValue : setAtPathSegments(base[key], tail, nextValue),
   } as T;
+}
+
+function isDeepMapCompatiblePath(path: string): boolean {
+  for (let index = 0; index < path.length; index += 1) {
+    if (path[index] !== "[") {
+      continue;
+    }
+
+    const closing = path.indexOf("]", index);
+    if (closing === -1) {
+      return false;
+    }
+
+    if (!/^\d+$/.test(path.slice(index + 1, closing))) {
+      return false;
+    }
+
+    index = closing;
+  }
+
+  return true;
+}
+
+function isPathContainer(value: unknown): value is Record<string, unknown> | unknown[] {
+  return Array.isArray(value) || (!!value && typeof value === "object");
 }
