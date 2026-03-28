@@ -1,5 +1,5 @@
 export { getIssuesAtPath, getMessagesAtPath, hasErrors } from "./errors.ts";
-export { createFormStore } from "./form-store.ts";
+export { createFormStore } from "./stores.ts";
 export { joinPath, normalizePath, pathToKey, pathToSegments, touchedPath } from "./paths.ts";
 export {
   getDefaultValue,

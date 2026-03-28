@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@sveltejs/vite-plugin-svelte": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-svelte": "catalog:",
     "prettier": "catalog:",

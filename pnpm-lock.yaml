@@ -57,6 +57,9 @@ importers:
       '@eslint/js':
         specifier: 'catalog:'
         version: 10.0.1(eslint@10.1.0(jiti@2.6.1))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 'catalog:'
+        version: 7.0.0(svelte@5.55.0)(vite@8.0.2(@types/node@25.5.0)(jiti@2.6.1)(yaml@2.8.3))
       eslint:
         specifier: 'catalog:'
         version: 10.1.0(jiti@2.6.1)
