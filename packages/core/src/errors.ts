@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import { pathToSegments } from "./paths.ts";
+import { issuePathToSegments, pathToSegments } from "./paths.ts";
 import type { PathInput } from "./types.ts";
 
 export function getIssuesAtPath(
@@ -30,22 +30,10 @@ function pathMatches(
   issuePath: StandardSchemaV1.Issue["path"],
   expected: readonly (string | number)[],
 ): boolean {
-  const actual = normalizeIssuePath(issuePath);
+  const actual = issuePathToSegments(issuePath);
   if (actual.length !== expected.length) {
     return false;
   }
 
   return actual.every((segment, index) => segment === expected[index]);
-}
-
-function normalizeIssuePath(path: StandardSchemaV1.Issue["path"]): readonly (string | number)[] {
-  if (!path) {
-    return [];
-  }
-
-  return path.map((segment) =>
-    typeof segment === "object" && segment !== null && "key" in segment
-      ? (segment.key as string | number)
-      : (segment as string | number),
-  );
 }

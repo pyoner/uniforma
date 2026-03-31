@@ -31,6 +31,7 @@ export type UniformaSchema<Input = unknown, Output = Input> = StandardSchemaV1<I
 export type InferInput<TSchema extends StandardSchemaV1> = StandardSchemaV1.InferInput<TSchema>;
 export type InferOutput<TSchema extends StandardSchemaV1> = StandardSchemaV1.InferOutput<TSchema>;
 export type FailureResult = StandardSchemaV1.FailureResult;
+export type IssuePath = StandardSchemaV1.Issue["path"];
 
 export type SchemaKind =
   | "array"

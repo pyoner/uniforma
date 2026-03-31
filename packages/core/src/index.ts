@@ -1,6 +1,13 @@
 export { getIssuesAtPath, getMessagesAtPath, hasErrors } from "./errors.ts";
 export { createFormStore } from "./stores.ts";
-export { joinPath, normalizePath, pathToKey, pathToSegments, touchedPath } from "./paths.ts";
+export {
+  issuePathToSegments,
+  joinPath,
+  normalizePath,
+  pathToKey,
+  pathToSegments,
+  touchedPath,
+} from "./paths.ts";
 export {
   getDefaultValue,
   getInputJsonSchema,
@@ -14,6 +21,7 @@ export type {
   CreateFormStoreOptions,
   DeepPath,
   FailureResult,
+  IssuePath,
   FormFieldStore,
   FormPath,
   FormStore,

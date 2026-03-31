@@ -1,4 +1,4 @@
-import type { DeepPath, FormPath, PathInput, PathKey } from "./types.ts";
+import type { DeepPath, FormPath, IssuePath, PathInput, PathKey } from "./types.ts";
 
 export function pathToKey(path: PathInput): DeepPath {
   return typeof path === "string" ? path : segmentsToPath(path);
@@ -26,6 +26,18 @@ export function pathToSegments(path: PathInput): FormPath {
   }
 
   return parseDeepPath(path as DeepPath);
+}
+
+export function issuePathToSegments(path: IssuePath | null | undefined): FormPath {
+  if (!path) {
+    return [];
+  }
+
+  return path.map((segment) =>
+    typeof segment === "object" && segment !== null && "key" in segment
+      ? normalizePathKey(segment.key)
+      : normalizePathKey(segment),
+  );
 }
 
 export function touchedPath(path: DeepPath): DeepPath {
@@ -72,4 +84,8 @@ function parseDeepPath(path: DeepPath): FormPath {
   }
 
   return segments;
+}
+
+function normalizePathKey(key: PropertyKey): PathKey {
+  return typeof key === "symbol" ? String(key) : key;
 }
