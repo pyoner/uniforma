@@ -100,7 +100,3 @@ export interface FormController<TSchema extends UniformaSchema> {
   validate: (fields: FlatFields) => Promise<ValidationResult<InferOutput<TSchema>>>;
   shouldValidate: (event: ValidationEvent) => boolean;
 }
-
-export type MutableNormalizedNode = {
-  -readonly [Key in keyof NormalizedSchemaNode]: NormalizedSchemaNode[Key];
-};

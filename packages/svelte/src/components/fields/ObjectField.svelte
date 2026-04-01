@@ -20,10 +20,7 @@
       FieldComponent: getComponentFromContainer(
         getFieldComponent(propertySchema, components),
       ),
-      fieldProps: getProps(
-        propertySchema,
-        getFieldComponent(propertySchema, components),
-      ),
+      fieldProps: getProps(getFieldComponent(propertySchema, components)),
     })),
   );
 </script>

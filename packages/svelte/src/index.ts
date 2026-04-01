@@ -6,7 +6,6 @@ import * as extra from "./components/fields/extra/index.ts";
 
 export { Form, components, extra, formDataToFlatFields, formToFlatFields };
 export type {
-  Errors,
   FieldComponents,
   FieldProps,
   FormComponentProps,

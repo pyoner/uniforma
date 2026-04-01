@@ -17,7 +17,7 @@
   const itemSchema = $derived(schema.item ?? schema);
   const itemComponent = $derived(getFieldComponent(itemSchema, components));
   const ItemFieldComponent = $derived(getComponentFromContainer(itemComponent));
-  const itemFieldProps = $derived(getProps(itemSchema, itemComponent));
+  const itemFieldProps = $derived(getProps(itemComponent));
   const ItemWrapperComponent = $derived(
     getComponentFromContainer(components.itemWrapper),
   );

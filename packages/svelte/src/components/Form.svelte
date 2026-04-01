@@ -86,9 +86,7 @@
   const RootComponent = $derived(
     rootField ? getComponentFromContainer(rootField) : null,
   );
-  const rootProps = $derived(
-    normalizedSchema && rootField ? getProps(normalizedSchema, rootField) : {},
-  );
+  const rootProps = $derived(normalizedSchema && rootField ? getProps(rootField) : {});
   const form = $derived<FormRuntime<UniformaSchema> | null>(
     controller
       ? {

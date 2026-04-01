@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { fieldName } from "../../helpers.ts";
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
@@ -16,7 +15,7 @@
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   {#if schema.kind === "enum" && (schema.enumValues?.length ?? 0) > 0}
     <select
-      name={fieldName(path)}
+      name={path}
       value={String(currentValue ?? "")}
       onchange={(event) =>
         updateValue((event.currentTarget as HTMLSelectElement).value)}
@@ -29,7 +28,7 @@
   {:else if schema.format === "date-time"}
     <input
       type="datetime-local"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
@@ -38,7 +37,7 @@
   {:else if schema.format === "date"}
     <input
       type="date"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
@@ -47,7 +46,7 @@
   {:else if schema.format === "time"}
     <input
       type="time"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
@@ -56,7 +55,7 @@
   {:else if schema.format === "email"}
     <input
       type="email"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
@@ -65,7 +64,7 @@
   {:else if schema.format === "url"}
     <input
       type="url"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
@@ -74,7 +73,7 @@
   {:else}
     <input
       type="text"
-      name={fieldName(path)}
+      name={path}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}

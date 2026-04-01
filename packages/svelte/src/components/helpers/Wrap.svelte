@@ -17,8 +17,8 @@
     children?: Snippet;
   } = $props();
 
-  const WrapperComponent = $derived(getComponent(schema, component));
-  const wrapperProps = $derived(getProps(schema, component));
+  const WrapperComponent = $derived(getComponent(component));
+  const wrapperProps = $derived(getProps(component));
   const fieldErrors = $derived(getFieldErrors(errors));
 </script>
 

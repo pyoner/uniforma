@@ -7,13 +7,15 @@ import type {
   JsonSchemaOptions,
   JsonSchemaTarget,
   JSONSchema,
-  MutableNormalizedNode,
   NormalizedSchemaNode,
   ValidationOptions,
   ValidationResult,
 } from "./types.ts";
 
 const DEFAULT_TARGET: JsonSchemaTarget = "draft-2020-12";
+type MutableNormalizedNode = {
+  -readonly [Key in keyof NormalizedSchemaNode]: NormalizedSchemaNode[Key];
+};
 
 export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
   schema: TSchema,

@@ -10,7 +10,6 @@ import { defaultFieldComponents as fields } from "./fields/index.ts";
 export const defaultFormComponents: FormComponents = {
   layout: Layout,
   wrapper: Wrapper,
-  form: Layout,
   itemWrapper: ItemWrapper,
   itemCtrl: ItemCtrl,
   addItem: AddItem,

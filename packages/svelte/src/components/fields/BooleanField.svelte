@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { fieldName } from "../../helpers.ts";
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  let { form, schema, components, path }: FieldProps<boolean> = $props();
+  let { form, schema, components, path }: FieldProps = $props();
 
   const currentValue = $derived(Boolean(form.getFieldValue(path)));
   const fieldErrors = $derived(form.getFieldErrors(path));
@@ -12,7 +11,7 @@
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   <input
     type="checkbox"
-    name={fieldName(path)}
+    name={path}
     checked={currentValue}
     onchange={(event) =>
       void form.setFieldValue(path, (event.currentTarget as HTMLInputElement).checked)}

@@ -14,8 +14,7 @@ import type {
 import type { Component, Snippet } from "svelte";
 
 export type Props = Record<string, unknown>;
-export type SvelteComponentLike = Component<any>;
-export type SvelteComponentProps = SvelteComponentLike | readonly [SvelteComponentLike, Props];
+export type SvelteComponentProps = Component<any> | readonly [Component<any>, Props];
 
 export interface FieldComponents {
   boolean: SvelteComponentProps;
@@ -30,20 +29,17 @@ export interface FieldComponents {
 export interface FormComponents {
   layout: SvelteComponentProps;
   wrapper: SvelteComponentProps;
-  form: SvelteComponentProps;
   itemWrapper: SvelteComponentProps;
   itemCtrl: SvelteComponentProps;
   addItem: SvelteComponentProps;
   fields: FieldComponents;
 }
 
-export interface FieldProps<TValue = unknown, TErrors = readonly string[] | FailureResult | null> {
+export interface FieldProps {
   readonly form: FormRuntime<any>;
   readonly schema: NormalizedSchemaNode;
   readonly components: FormComponents;
   readonly path: JsonPointer;
-  readonly value?: TValue;
-  readonly errors?: TErrors;
   readonly props?: Props;
 }
 
@@ -78,5 +74,3 @@ export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSch
   readonly onReset?: ((value: InferInput<TSchema>) => void) | undefined;
   readonly controls?: Snippet<[FormRenderState]> | undefined;
 }
-
-export type Errors = FailureResult | readonly string[] | null;
