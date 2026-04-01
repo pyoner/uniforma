@@ -1,30 +1,32 @@
-export { createFormStore, getMessagesAtPath } from "@uniforma/core";
+export { createFormController, getMessagesAtPointer } from "@uniforma/core";
 import { defaultFormComponents as components } from "./components/index.ts";
 import Form from "./components/Form.svelte";
+import { formDataToFlatFields, formToFlatFields } from "./dom.ts";
 import * as extra from "./components/fields/extra/index.ts";
 
-export { Form, components, extra };
+export { Form, components, extra, formDataToFlatFields, formToFlatFields };
 export type {
   Errors,
   FieldComponents,
   FieldProps,
   FormComponentProps,
   FormComponents,
+  FormRuntime,
   FormRenderState,
   Props,
   SvelteComponentProps,
 } from "./types.ts";
 export type {
-  DeepPath,
-  FormFieldStore,
-  FormStore,
+  FlatFields,
+  FormController,
+  FormStatus,
   InferInput,
   InferOutput,
   JsonSchemaTarget,
+  JsonPointer,
   JSONSchema,
   NormalizedSchemaNode,
-  SubmitResult,
   UniformaSchema,
-  ValidationMode,
+  ValidationEvent,
   ValidationResult,
 } from "@uniforma/core";

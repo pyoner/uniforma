@@ -1,5 +1,6 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 
+import { appendJsonPointer } from "./paths.ts";
 import { cloneValue } from "./values.ts";
 import type {
   InferOutput,
@@ -58,12 +59,12 @@ export async function validateSchema<TSchema extends StandardSchemaV1>(
 
 export function normalizeJsonSchema(
   schema: JSONSchema,
-  path: NormalizedSchemaNode["path"] = [],
+  pointer: NormalizedSchemaNode["pointer"] = "",
 ): NormalizedSchemaNode {
   const kind = resolveSchemaKind(schema);
   const node: MutableNormalizedNode = {
     kind,
-    path,
+    pointer,
     title: schema.title,
     description: schema.description,
     format: schema.format,
@@ -79,7 +80,7 @@ export function normalizeJsonSchema(
     node.required = schema.required;
     const properties: Record<string, NormalizedSchemaNode> = {};
     for (const [key, value] of Object.entries(schema.properties ?? {})) {
-      properties[key] = normalizeJsonSchema(value, [...path, key]);
+      properties[key] = normalizeJsonSchema(value, appendJsonPointer(pointer, key));
     }
     node.properties = properties;
   }
@@ -87,7 +88,7 @@ export function normalizeJsonSchema(
   if (kind === "array") {
     const itemSchema = Array.isArray(schema.items) ? schema.items[0] : schema.items;
     if (itemSchema) {
-      node.item = normalizeJsonSchema(itemSchema, [...path, 0]);
+      node.item = normalizeJsonSchema(itemSchema, appendJsonPointer(pointer, 0));
     }
   }
 

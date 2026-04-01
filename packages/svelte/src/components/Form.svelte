@@ -1,9 +1,14 @@
 <script lang="ts">
   import {
-    createFormStore,
+    createFormController,
     type FailureResult,
-    getMessagesAtPath,
-    type FormStore,
+    getMessagesAtPointer,
+    getValueAtPointer,
+    hasErrors,
+    replacePointerValue,
+    type FlatFields,
+    type FormController,
+    type FormStatus,
     type InferInput,
     type UniformaSchema,
   } from "@uniforma/core";
@@ -17,13 +22,14 @@
   import type {
     FormComponentProps,
     FormComponents,
+    FormRuntime,
     FormRenderState,
   } from "../types.ts";
   import { defaultFormComponents as componentsFallback } from "./defaults.ts";
 
   let {
     schema,
-    value = undefined,
+    initialValue = undefined,
     components = componentsFallback,
     validateOn = undefined,
     onValueChange,
@@ -32,68 +38,44 @@
     controls: controlsSnippet,
   }: FormComponentProps = $props();
 
-  let form = $state<FormStore<UniformaSchema> | null>(null);
-  let currentValue = $state<InferInput<UniformaSchema> | undefined>(undefined);
+  let controller = $state<FormController<UniformaSchema> | null>(null);
+  let fields = $state<FlatFields>({});
   let currentErrors = $state<FailureResult | null>(null);
-  let currentValid = $state(true);
-  let currentValidating = $state(false);
-  let currentSubmitting = $state(false);
-  let lastSyncedPropValueKey = $state<string | undefined>(undefined);
-
-  $effect.pre(() => {
-    if (!form) {
-      form = createFormStore({
-        schema,
-        ...(value !== undefined ? { initialValue: value } : {}),
-        ...(validateOn !== undefined ? { validateOn } : {}),
-      });
-      currentValue = value as InferInput<UniformaSchema> | undefined;
-      lastSyncedPropValueKey = toValueKey(value);
-    }
-  });
+  let status = $state<FormStatus>("idle");
+  let lastSchema = $state<UniformaSchema | null>(null);
+  let lastInitialValueKey = $state<string | undefined>(undefined);
+  let lastValidateOnKey = $state<string>("submit");
 
   $effect(() => {
-    if (!form) {
+    const nextInitialValueKey = toValueKey(initialValue);
+    const nextValidateOnKey = toValidateOnKey(validateOn);
+
+    if (
+      controller &&
+      lastSchema === schema &&
+      lastInitialValueKey === nextInitialValueKey &&
+      lastValidateOnKey === nextValidateOnKey
+    ) {
       return;
     }
 
-    const unsubscribeValue = form.$value.subscribe((nextValue) => {
-      const nextValueKey = toValueKey(nextValue);
-      currentValue = nextValue as InferInput<UniformaSchema>;
-
-      if (nextValueKey === lastSyncedPropValueKey) {
-        return;
-      }
-
-      onValueChange?.(nextValue as InferInput<UniformaSchema>);
+    controller = createFormController({
+      schema,
+      ...(initialValue !== undefined ? { initialValue } : {}),
+      ...(validateOn !== undefined ? { validateOn } : {}),
     });
-    const unsubscribeErrors = form.$errors.subscribe((nextErrors) => {
-      currentErrors = nextErrors;
-    });
-    const unsubscribeValid = form.$valid.subscribe((nextValid) => {
-      currentValid = nextValid;
-    });
-    const unsubscribeValidating = form.$validating.subscribe(
-      (nextValidating) => {
-        currentValidating = nextValidating;
-      },
-    );
-    const unsubscribeSubmitting = form.$submitting.subscribe(
-      (nextSubmitting) => {
-        currentSubmitting = nextSubmitting;
-      },
-    );
-
-    return () => {
-      unsubscribeValue();
-      unsubscribeErrors();
-      unsubscribeValid();
-      unsubscribeValidating();
-      unsubscribeSubmitting();
-    };
+    fields = { ...controller.initialFields };
+    currentErrors = null;
+    status = "idle";
+    lastSchema = schema;
+    lastInitialValueKey = nextInitialValueKey;
+    lastValidateOnKey = nextValidateOnKey;
   });
 
-  const normalizedSchema = $derived(form?.normalizedSchema ?? null);
+  const currentValue = $derived(
+    controller ? (controller.inflate(fields) as InferInput<UniformaSchema>) : undefined,
+  );
+  const normalizedSchema = $derived(controller?.normalizedSchema ?? null);
   const rootField = $derived(
     normalizedSchema ? getFieldComponent(normalizedSchema, components) : null,
   );
@@ -107,47 +89,101 @@
   const rootProps = $derived(
     normalizedSchema && rootField ? getProps(normalizedSchema, rootField) : {},
   );
+  const form = $derived<FormRuntime<UniformaSchema> | null>(
+    controller
+      ? {
+          controller,
+          fields,
+          value: currentValue as InferInput<UniformaSchema>,
+          errors: currentErrors,
+          status,
+          getFieldErrors(pointer) {
+            return getMessagesAtPointer(currentErrors, pointer);
+          },
+          getFieldInput(pointer) {
+            return fields[pointer];
+          },
+          getFieldValue(pointer) {
+            return getValueAtPointer(currentValue, pointer);
+          },
+          setFieldValue(pointer, value) {
+            return updateFieldValue(pointer, value);
+          },
+          handleEvent(event) {
+            return handleEvent(event);
+          },
+          reset() {
+            reset();
+          },
+        }
+      : null,
+  );
   const renderState = $derived<FormRenderState>({
     errors: currentErrors,
-    rootErrors: getMessagesAtPath(currentErrors, ""),
-    valid: currentValid,
-    validating: currentValidating,
-    submitting: currentSubmitting,
-  });
-
-  $effect(() => {
-    const nextPropValueKey = toValueKey(value);
-
-    if (
-      form &&
-      value !== undefined &&
-      nextPropValueKey !== toValueKey(currentValue)
-    ) {
-      lastSyncedPropValueKey = nextPropValueKey;
-      void form.setValue(value as InferInput<UniformaSchema>);
-    }
+    rootErrors: getMessagesAtPointer(currentErrors, ""),
+    valid: !hasErrors(currentErrors),
+    status,
   });
 
   async function submit() {
-    if (!form) {
+    if (!controller) {
       return;
     }
 
-    const result = await form.submit();
+    const result = await validateFields("submit");
     if (result.success) {
       await onSubmit?.(result.value);
     }
   }
 
   function reset() {
-    if (!form) {
+    if (!controller) {
       return;
     }
 
-    form.reset();
-    if (currentValue !== undefined) {
-      onReset?.(currentValue);
+    fields = { ...controller.initialFields };
+    currentErrors = null;
+    status = "idle";
+    onReset?.(controller.inflate(fields) as InferInput<UniformaSchema>);
+  }
+
+  async function updateFieldValue(pointer: string, value: unknown) {
+    if (!controller) {
+      return;
     }
+
+    const nextFields = replacePointerValue(fields, pointer, value);
+    fields = nextFields;
+    onValueChange?.(controller.inflate(nextFields) as InferInput<UniformaSchema>);
+    await handleEvent("change");
+  }
+
+  async function handleEvent(event: "blur" | "change" | "submit") {
+    if (!controller || !controller.shouldValidate(event)) {
+      return;
+    }
+
+    await validateFields(event);
+  }
+
+  async function validateFields(event: "blur" | "change" | "submit") {
+    if (!controller) {
+      throw new Error("controller is not ready");
+    }
+
+    status = event === "submit" ? "submitting" : "validating";
+    const result = await controller.validate(fields);
+    currentErrors = result.success ? null : result.error;
+    status = "idle";
+    return result;
+  }
+
+  function toValidateOnKey(nextValue: FormComponentProps["validateOn"]): string {
+    if (nextValue === undefined) {
+      return "submit";
+    }
+
+    return JSON.stringify(Array.isArray(nextValue) ? nextValue : [nextValue]);
   }
 
   function toValueKey(nextValue: unknown): string | undefined {

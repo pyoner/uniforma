@@ -1,28 +1,76 @@
 import { expect, test } from "vite-plus/test";
+import { z } from "zod";
 
-import { getAtPath, setAtPath } from "../src/index.ts";
+import {
+  flattenValue,
+  getInputJsonSchema,
+  getValueAtPointer,
+  inflateValue,
+  normalizeJsonSchema,
+  replacePointerValue,
+  setValueAtPointer,
+} from "../src/index.ts";
 
-test("can set nested values by path", () => {
-  expect(setAtPath({ profile: { name: "Ada" } }, ["profile", "name"], "Lin")).toEqual({
+test("can set nested values by JSON Pointer", () => {
+  expect(setValueAtPointer({ profile: { name: "Ada" } }, "/profile/name", "Lin")).toEqual({
     profile: { name: "Lin" },
   });
 });
 
-test("can read nested values by deepmap-compatible string path", () => {
-  expect(getAtPath({ profile: { names: ["Ada"] } }, "profile.names[0]")).toBe("Ada");
+test("can read nested values by JSON Pointer", () => {
+  expect(getValueAtPointer({ profile: { names: ["Ada"] } }, "/profile/names/0")).toBe("Ada");
 });
 
-test("can set nested values by deepmap-compatible string path", () => {
-  expect(setAtPath({ profile: { names: ["Ada"] } }, "profile.names[0]", "Lin")).toEqual({
-    profile: { names: ["Lin"] },
+test("flattens and inflates values with schema-aware coercion", () => {
+  const schema = z.object({
+    profile: z.object({
+      name: z.string(),
+      age: z.number(),
+    }),
+    subscribed: z.boolean(),
+  });
+  const normalizedSchema = normalizeJsonSchema(getInputJsonSchema(schema));
+  const fields = flattenValue({
+    profile: {
+      name: "Ada",
+      age: 42,
+    },
+    subscribed: false,
+  });
+
+  expect(fields).toEqual({
+    "/profile/name": "Ada",
+    "/profile/age": 42,
+    "/subscribed": false,
+  });
+  expect(
+    inflateValue(
+      {
+        "/profile/name": "Ada",
+        "/profile/age": "42",
+        "/subscribed": "true",
+      },
+      normalizedSchema,
+    ),
+  ).toEqual({
+    profile: { name: "Ada", age: 42 },
+    subscribed: true,
   });
 });
 
-test("keeps compatibility for non-numeric bracket segments", () => {
-  const value = { profile: { details: { name: "Ada" } } };
-
-  expect(getAtPath(value, "profile[details].name")).toBe("Ada");
-  expect(setAtPath(value, "profile[details].name", "Lin")).toEqual({
-    profile: { details: { name: "Lin" } },
+test("replaces a pointer subtree in a flat field map", () => {
+  expect(
+    replacePointerValue(
+      {
+        "/profile/name": "Ada",
+        "/profile/city": "London",
+        "/tags/0": "uniforma",
+      },
+      "/profile",
+      { name: "Lin" },
+    ),
+  ).toEqual({
+    "/profile/name": "Lin",
+    "/tags/0": "uniforma",
   });
 });

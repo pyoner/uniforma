@@ -1,29 +1,13 @@
 import {
-  type FailureResult,
   getDefaultValue as getCoreDefaultValue,
-  getMessagesAtPath,
-  getAtPath,
-  normalizeFormValue,
-  type DeepPath,
+  getMessagesAtPointer,
+  getValueAtPointer,
+  type JsonPointer,
   type JSONSchema,
   type NormalizedSchemaNode,
 } from "@uniforma/core";
 
 import type { FormComponents, Props, SvelteComponentProps } from "./types.ts";
-
-export function createProps<TValue = unknown, TErrors = readonly string[] | FailureResult | null>(
-  value: TValue | null = null,
-) {
-  return {
-    value,
-    errors: null as TErrors | null,
-    schema: undefined,
-    components: undefined,
-    path: "" as DeepPath,
-    form: undefined,
-    props: {},
-  };
-}
 
 export function defaultValue<TValue>(schema: JSONSchema, value: TValue | null): TValue | null {
   if (value === undefined || value === null) {
@@ -40,10 +24,6 @@ export function defaultValue<TValue>(schema: JSONSchema, value: TValue | null): 
   }
 
   return value;
-}
-
-export function normalizeValue<TValue>(value: TValue): TValue {
-  return normalizeFormValue(value);
 }
 
 export function getComponentFromContainer(container: SvelteComponentProps): unknown {
@@ -94,4 +74,8 @@ export function getFieldErrors(errorTree: readonly string[] | null | undefined):
   return errorTree ?? [];
 }
 
-export { getAtPath, getMessagesAtPath };
+export function fieldName(pointer: JsonPointer): string {
+  return pointer;
+}
+
+export { getMessagesAtPointer, getValueAtPointer };

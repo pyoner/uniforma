@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { joinPath } from "@uniforma/core";
+  import { appendJsonPointer, getDefaultValue } from "@uniforma/core";
 
   import {
-    defaultValue,
     getComponentFromContainer,
     getFieldComponent,
     getProps,
@@ -13,25 +12,8 @@
 
   let { form, schema, components, path }: FieldProps = $props();
 
-  let fieldValue = $state<unknown[] | undefined>(undefined);
-  let fieldErrors = $state<readonly string[]>([]);
-
-  $effect(() => {
-    const field = form.field(path);
-    const unsubscribeValue = field.$value.subscribe((nextValue) => {
-      fieldValue = nextValue as unknown[] | undefined;
-    });
-    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
-      fieldErrors = nextErrors;
-    });
-
-    return () => {
-      unsubscribeValue();
-      unsubscribeErrors();
-    };
-  });
-
-  const items = $derived(fieldValue ?? []);
+  const items = $derived((form.getFieldValue(path) as unknown[] | undefined) ?? []);
+  const fieldErrors = $derived(form.getFieldErrors(path));
   const itemSchema = $derived(schema.item ?? schema);
   const itemComponent = $derived(getFieldComponent(itemSchema, components));
   const ItemFieldComponent = $derived(getComponentFromContainer(itemComponent));
@@ -53,7 +35,7 @@
 
   function removeItem(index: number) {
     const next = items.filter((_, itemIndex) => itemIndex !== index);
-    void form.setPathValue(path, next);
+    void form.setFieldValue(path, next);
   }
 
   function moveItem(index: number, position: number) {
@@ -65,12 +47,12 @@
     const current = next[index];
     next[index] = next[position];
     next[position] = current;
-    void form.setPathValue(path, next);
+    void form.setFieldValue(path, next);
   }
 
   function addItem() {
-    const nextItem = schema.item ? defaultValue(schema.item.raw, null) : null;
-    void form.setPathValue(path, [...items, nextItem]);
+    const nextItem = schema.item ? (getDefaultValue(schema.item.raw) ?? null) : null;
+    void form.setFieldValue(path, [...items, nextItem]);
   }
 </script>
 
@@ -81,7 +63,7 @@
         {form}
         schema={itemSchema}
         {components}
-        path={joinPath(path, index)}
+        path={appendJsonPointer(path, index)}
         props={itemFieldProps}
       />
 

@@ -8,9 +8,11 @@ catalog:
   "@nanostores/deepmap": ^0.0.1
   "@standard-schema/spec": ^1.1.0
   "@sveltejs/vite-plugin-svelte": ^7.0.0
+  "@types/json-pointer": ^1.0.34
   "@types/node": ^24
   eslint: ^10.1.0
   eslint-plugin-svelte: ^3.16.0
+  json-pointer: ^0.6.2
   nanostores: ^1.2.0
   prettier: ^3.8.1
   prettier-plugin-svelte: ^3.5.1

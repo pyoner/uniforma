@@ -1,39 +1,30 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import { issuePathToSegments, pathToSegments } from "./paths.ts";
-import type { PathInput } from "./types.ts";
+import { issuePathToPointer } from "./paths.ts";
+import type { JsonPointer } from "./types.ts";
 
-export function getIssuesAtPath(
+export function getIssuePointer(issue: StandardSchemaV1.Issue): JsonPointer {
+  return issuePathToPointer(issue.path);
+}
+
+export function getIssuesAtPointer(
   failure: StandardSchemaV1.FailureResult | null | undefined,
-  path: PathInput,
+  pointer: JsonPointer,
 ): readonly StandardSchemaV1.Issue[] {
   if (!failure) {
     return [];
   }
 
-  const expected = pathToSegments(path);
-  return failure.issues.filter((issue) => pathMatches(issue.path, expected));
+  return failure.issues.filter((issue) => getIssuePointer(issue) === pointer);
 }
 
-export function getMessagesAtPath(
+export function getMessagesAtPointer(
   failure: StandardSchemaV1.FailureResult | null | undefined,
-  path: PathInput,
+  pointer: JsonPointer,
 ): readonly string[] {
-  return getIssuesAtPath(failure, path).map((issue) => issue.message);
+  return getIssuesAtPointer(failure, pointer).map((issue) => issue.message);
 }
 
 export function hasErrors(failure: StandardSchemaV1.FailureResult | null | undefined): boolean {
   return (failure?.issues.length ?? 0) > 0;
-}
-
-function pathMatches(
-  issuePath: StandardSchemaV1.Issue["path"],
-  expected: readonly (string | number)[],
-): boolean {
-  const actual = issuePathToSegments(issuePath);
-  if (actual.length !== expected.length) {
-    return false;
-  }
-
-  return actual.every((segment, index) => segment === expected[index]);
 }

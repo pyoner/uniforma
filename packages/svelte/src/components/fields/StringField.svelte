@@ -1,49 +1,26 @@
 <script lang="ts">
-  import { defaultValue } from "../../helpers.ts";
+  import { fieldName } from "../../helpers.ts";
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
   let { form, schema, components, path }: FieldProps = $props();
 
-  let currentValue = $state<string | null | undefined>(undefined);
-  let fieldErrors = $state<readonly string[]>([]);
-
-  $effect(() => {
-    const field = form.field(path);
-    const unsubscribeValue = field.$value.subscribe((nextValue) => {
-      currentValue = nextValue as string | null | undefined;
-    });
-    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
-      fieldErrors = nextErrors;
-    });
-
-    return () => {
-      unsubscribeValue();
-      unsubscribeErrors();
-    };
-  });
-
-  $effect(() => {
-    if (currentValue == null) {
-      const nextValue = defaultValue<string>(schema.raw, currentValue ?? null);
-      if (nextValue != null) {
-        void form.setPathValue(path, nextValue);
-      }
-    }
-  });
+  const currentValue = $derived(form.getFieldInput(path) as string | null | undefined);
+  const fieldErrors = $derived(form.getFieldErrors(path));
 
   function updateValue(nextValue: string) {
-    void form.setPathValue(path, nextValue);
+    void form.setFieldValue(path, nextValue);
   }
 </script>
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   {#if schema.kind === "enum" && (schema.enumValues?.length ?? 0) > 0}
     <select
+      name={fieldName(path)}
       value={String(currentValue ?? "")}
       onchange={(event) =>
         updateValue((event.currentTarget as HTMLSelectElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     >
       {#each schema.enumValues ?? [] as option (String(option))}
         <option value={String(option)}>{String(option)}</option>
@@ -52,50 +29,56 @@
   {:else if schema.format === "date-time"}
     <input
       type="datetime-local"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {:else if schema.format === "date"}
     <input
       type="date"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {:else if schema.format === "time"}
     <input
       type="time"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {:else if schema.format === "email"}
     <input
       type="email"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {:else if schema.format === "url"}
     <input
       type="url"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {:else}
     <input
       type="text"
+      name={fieldName(path)}
       value={currentValue ?? ""}
       oninput={(event) =>
         updateValue((event.currentTarget as HTMLInputElement).value)}
-      onblur={() => void form.touch(path)}
+      onblur={() => void form.handleEvent("blur")}
     />
   {/if}
 </Wrap>

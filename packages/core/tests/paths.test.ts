@@ -1,21 +1,32 @@
 import { expect, test } from "vite-plus/test";
 
-import { issuePathToSegments, pathToKey, pathToSegments, type IssuePath } from "../src/index.ts";
+import {
+  appendJsonPointer,
+  escapeJsonPointerToken,
+  isJsonPointerDescendant,
+  issuePathToPointer,
+  pointerToSegments,
+  segmentsToPointer,
+  type IssuePath,
+} from "../src/index.ts";
 
-test("converts form paths to a canonical segment format", () => {
-  expect(pathToSegments("profile.names[0]")).toEqual(["profile", "names", 0]);
-  expect(pathToSegments(["profile", "names", 0])).toEqual(["profile", "names", 0]);
-  expect(pathToSegments("profile[details].name")).toEqual(["profile", "details", "name"]);
-  expect(pathToSegments("")).toEqual([]);
+test("converts JSON Pointer values to canonical segments", () => {
+  expect(pointerToSegments("/profile/names/0")).toEqual(["profile", "names", "0"]);
+  expect(pointerToSegments("")).toEqual([]);
+  expect(segmentsToPointer(["profile", "names", "0"])).toBe("/profile/names/0");
 });
 
-test("converts issue paths to the same canonical segment format", () => {
+test("converts issue paths to JSON Pointers", () => {
   const issuePath: IssuePath = ["profile", { key: "names" }, { key: 0 }];
 
-  expect(issuePathToSegments(issuePath)).toEqual(["profile", "names", 0]);
-  expect(issuePathToSegments(undefined)).toEqual([]);
+  expect(issuePathToPointer(issuePath)).toBe("/profile/names/0");
+  expect(issuePathToPointer(undefined)).toBe("");
 });
 
-test("serializes canonical segments back to a deep path string", () => {
-  expect(pathToKey(["profile", "names", 0])).toBe("profile.names[0]");
+test("appends escaped pointer tokens and detects descendants", () => {
+  expect(appendJsonPointer("/profile", "full/name")).toBe(
+    `/profile/${escapeJsonPointerToken("full/name")}`,
+  );
+  expect(isJsonPointerDescendant("/profile/name", "/profile")).toBe(true);
+  expect(isJsonPointerDescendant("/profile", "/profile")).toBe(false);
 });

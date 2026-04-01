@@ -1,11 +1,9 @@
-import type { Store } from "nanostores";
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 
 export type JsonSchemaTarget = StandardJSONSchemaV1.Target;
-export type PathKey = string | number;
-export type FormPath = readonly PathKey[];
-export type DeepPath = string;
-export type PathInput = DeepPath | FormPath;
+export type JsonPointer = string;
+export type JsonPointerSegment = string;
+export type FlatFields = Record<JsonPointer, unknown>;
 
 export interface JSONSchema {
   readonly type?: string | readonly string[];
@@ -46,7 +44,7 @@ export type SchemaKind =
 
 export interface NormalizedSchemaNode {
   readonly kind: SchemaKind;
-  readonly path: FormPath;
+  readonly pointer: JsonPointer;
   readonly title?: string | undefined;
   readonly description?: string | undefined;
   readonly format?: string | undefined;
@@ -79,64 +77,30 @@ export interface ValidationOptions {
   readonly libraryOptions?: Record<string, unknown>;
 }
 
-export type ValidationMode = "blur" | "change" | "submit";
+export type ValidationEvent = "blur" | "change" | "submit";
+export type FormStatus = "idle" | "submitting" | "validating";
 
-export interface CreateFormStoreOptions<TSchema extends UniformaSchema> {
+export interface CreateFormControllerOptions<TSchema extends UniformaSchema> {
   readonly schema: TSchema;
   readonly initialValue?: InferInput<TSchema>;
   readonly jsonSchemaTarget?: JsonSchemaTarget;
-  readonly validateOn?: ValidationMode | readonly ValidationMode[];
+  readonly validateOn?: ValidationEvent | readonly ValidationEvent[];
   readonly libraryOptions?: Record<string, unknown>;
 }
 
-export interface FormFieldStore {
-  readonly path: DeepPath;
-  readonly $value: Store<unknown>;
-  readonly $errors: Store<readonly string[]>;
-  readonly $touched: Store<boolean>;
-  set: (value: unknown) => Promise<void>;
-  blur: () => Promise<void>;
-}
-
-export interface SubmitSuccess<TSchema extends UniformaSchema> {
-  readonly success: true;
-  readonly value: InferOutput<TSchema>;
-}
-
-export interface SubmitFailure {
-  readonly success: false;
-  readonly error: FailureResult;
-}
-
-export type SubmitResult<TSchema extends UniformaSchema> = SubmitSuccess<TSchema> | SubmitFailure;
-
-export interface FormStore<TSchema extends UniformaSchema> {
+export interface FormController<TSchema extends UniformaSchema> {
   readonly schema: TSchema;
   readonly jsonSchema: JSONSchema;
   readonly normalizedSchema: NormalizedSchemaNode;
-  readonly $value: Store<InferInput<TSchema>>;
-  readonly $errors: Store<FailureResult | null>;
-  readonly $touched: Store<Record<string, unknown>>;
-  readonly $validating: Store<boolean>;
-  readonly $submitting: Store<boolean>;
-  readonly $valid: Store<boolean>;
-  readonly $dirty: Store<boolean>;
-  getValue: () => InferInput<TSchema>;
-  getPathValue: (path: DeepPath) => unknown;
-  setValue: (value: InferInput<TSchema>) => Promise<void>;
-  setPathValue: (path: DeepPath, value: unknown) => Promise<void>;
-  touch: (path: DeepPath) => Promise<void>;
-  field: (path: DeepPath) => FormFieldStore;
-  validate: () => Promise<ValidationResult<InferOutput<TSchema>>>;
-  submit: () => Promise<SubmitResult<TSchema>>;
-  reset: (value?: InferInput<TSchema>) => void;
+  readonly initialValue: InferInput<TSchema> | undefined;
+  readonly initialFields: FlatFields;
+  readonly validateOn: readonly ValidationEvent[];
+  flatten: (value: unknown) => FlatFields;
+  inflate: (fields: FlatFields) => InferInput<TSchema>;
+  validate: (fields: FlatFields) => Promise<ValidationResult<InferOutput<TSchema>>>;
+  shouldValidate: (event: ValidationEvent) => boolean;
 }
 
 export type MutableNormalizedNode = {
   -readonly [Key in keyof NormalizedSchemaNode]: NormalizedSchemaNode[Key];
-};
-
-export type InternalValueStore<T> = Store<T> & {
-  set: (value: T) => void;
-  setKey?: ((path: string, value: unknown) => void) | undefined;
 };

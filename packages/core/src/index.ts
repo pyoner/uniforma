@@ -1,12 +1,13 @@
-export { getIssuesAtPath, getMessagesAtPath, hasErrors } from "./errors.ts";
-export { createFormStore } from "./stores.ts";
+export { getIssuePointer, getIssuesAtPointer, getMessagesAtPointer, hasErrors } from "./errors.ts";
+export { createFormController } from "./controller.ts";
 export {
-  issuePathToSegments,
-  joinPath,
-  normalizePath,
-  pathToKey,
-  pathToSegments,
-  touchedPath,
+  appendJsonPointer,
+  escapeJsonPointerToken,
+  isJsonPointerDescendant,
+  issuePathToPointer,
+  pointerToSegments,
+  segmentsToPointer,
+  unescapeJsonPointerToken,
 } from "./paths.ts";
 export {
   getDefaultValue,
@@ -15,31 +16,36 @@ export {
   normalizeJsonSchema,
   validateSchema,
 } from "./schema.ts";
-export { cloneValue, getAtPath, normalizeFormValue, serializeValue, setAtPath } from "./values.ts";
+export {
+  cloneValue,
+  flattenValue,
+  flattenValueAtPointer,
+  getValueAtPointer,
+  inflateValue,
+  normalizeFormValue,
+  replacePointerValue,
+  setValueAtPointer,
+} from "./values.ts";
 
 export type {
-  CreateFormStoreOptions,
-  DeepPath,
+  CreateFormControllerOptions,
   FailureResult,
+  FlatFields,
+  FormController,
+  FormStatus,
   IssuePath,
-  FormFieldStore,
-  FormPath,
-  FormStore,
   InferInput,
   InferOutput,
   JsonSchemaOptions,
   JsonSchemaTarget,
+  JsonPointer,
+  JsonPointerSegment,
   JSONSchema,
   NormalizedSchemaNode,
-  PathInput,
-  PathKey,
   SchemaKind,
-  SubmitFailure,
-  SubmitResult,
-  SubmitSuccess,
   UniformaSchema,
   ValidationFailure,
-  ValidationMode,
+  ValidationEvent,
   ValidationOptions,
   ValidationResult,
   ValidationSuccess,

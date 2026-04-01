@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setAtPath } from "@uniforma/core";
+  import { setValueAtPointer } from "@uniforma/core";
   import { Form, components } from "@uniforma/svelte";
   import { z } from "zod";
 
@@ -24,7 +24,7 @@
       .default(["https://uniforma.dev"]),
   });
 
-  let value = {
+  let initialValue = {
     fullName: "Ada Lovelace",
     email: "ada@uniforma.dev",
     role: "maker",
@@ -36,17 +36,19 @@
     },
     links: ["https://uniforma.dev"],
   };
+  let value = initialValue;
 
   let submittedValue = "";
 
   function loadExample() {
-    const seeded = setAtPath(value, ["studio", "city"], "Tokyo");
-    const withLinks = setAtPath(
+    const seeded = setValueAtPointer(initialValue, "/studio/city", "Tokyo");
+    const withLinks = setValueAtPointer(
       seeded,
-      ["links"],
+      "/links",
       ["https://uniforma.dev", "https://example.com/docs"],
     );
-    value = withLinks as typeof value;
+    initialValue = withLinks as typeof initialValue;
+    value = initialValue;
   }
 </script>
 
@@ -111,7 +113,7 @@
       <Form
         schema={profileSchema}
         {components}
-        {value}
+        {initialValue}
         onValueChange={(next) => {
           value = next as typeof value;
         }}
@@ -120,10 +122,11 @@
           submittedValue = JSON.stringify(result, null, 2);
         }}
         onReset={(next) => {
+          value = next as typeof value;
           submittedValue = JSON.stringify(next, null, 2);
         }}
       >
-        {#snippet controls({ rootErrors, valid, validating, submitting })}
+        {#snippet controls({ rootErrors, valid, status })}
           {#if rootErrors.length > 0}
             <div class="notice error">
               {#each rootErrors as message (message)}
@@ -135,13 +138,7 @@
           <div class="submit-row">
             <div class="status-line">
               <span>{valid ? "ready" : "needs attention"}</span>
-              <span
-                >{validating
-                  ? "validating"
-                  : submitting
-                    ? "submitting"
-                    : "idle"}</span
-              >
+              <span>{status}</span>
             </div>
             <div class="actions">
               <button type="reset" class="ghost">Reset</button>

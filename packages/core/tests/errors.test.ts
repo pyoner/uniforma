@@ -1,6 +1,11 @@
 import { expect, test } from "vite-plus/test";
 
-import { getIssuesAtPath, getMessagesAtPath, hasErrors } from "../src/index.ts";
+import {
+  getIssuePointer,
+  getIssuesAtPointer,
+  getMessagesAtPointer,
+  hasErrors,
+} from "../src/index.ts";
 
 test("creates root and nested error branches", () => {
   const failure = {
@@ -15,8 +20,14 @@ test("creates root and nested error branches", () => {
     ],
   };
 
+  const nestedIssue = failure.issues[1];
+  if (!nestedIssue) {
+    throw new Error("expected nested issue");
+  }
+
   expect(hasErrors(failure)).toBe(true);
-  expect(getMessagesAtPath(failure, "")).toContain("Root failed");
-  expect(getMessagesAtPath(failure, ["contact", "email"])).toContain("Email required");
-  expect(getIssuesAtPath(failure, ["contact", "email"])).toHaveLength(1);
+  expect(getIssuePointer(nestedIssue)).toBe("/contact/email");
+  expect(getMessagesAtPointer(failure, "")).toContain("Root failed");
+  expect(getMessagesAtPointer(failure, "/contact/email")).toContain("Email required");
+  expect(getIssuesAtPointer(failure, "/contact/email")).toHaveLength(1);
 });

@@ -1,12 +1,14 @@
 import type {
-  DeepPath,
   FailureResult,
-  FormStore,
+  FlatFields,
+  FormController,
+  FormStatus,
   InferInput,
   InferOutput,
+  JsonPointer,
   NormalizedSchemaNode,
   UniformaSchema,
-  ValidationMode,
+  ValidationEvent,
 } from "@uniforma/core";
 
 import type { Component, Snippet } from "svelte";
@@ -36,28 +38,41 @@ export interface FormComponents {
 }
 
 export interface FieldProps<TValue = unknown, TErrors = readonly string[] | FailureResult | null> {
-  readonly form: FormStore<any>;
+  readonly form: FormRuntime<any>;
   readonly schema: NormalizedSchemaNode;
   readonly components: FormComponents;
-  readonly path: DeepPath;
+  readonly path: JsonPointer;
   readonly value?: TValue;
   readonly errors?: TErrors;
   readonly props?: Props;
+}
+
+export interface FormRuntime<TSchema extends UniformaSchema = UniformaSchema> {
+  readonly controller: FormController<TSchema>;
+  readonly fields: FlatFields;
+  readonly value: InferInput<TSchema>;
+  readonly errors: FailureResult | null;
+  readonly status: FormStatus;
+  getFieldErrors: (pointer: JsonPointer) => readonly string[];
+  getFieldInput: (pointer: JsonPointer) => unknown;
+  getFieldValue: (pointer: JsonPointer) => unknown;
+  setFieldValue: (pointer: JsonPointer, value: unknown) => Promise<void>;
+  handleEvent: (event: ValidationEvent) => Promise<void>;
+  reset: () => void;
 }
 
 export interface FormRenderState {
   readonly errors: FailureResult | null;
   readonly rootErrors: readonly string[];
   readonly valid: boolean;
-  readonly validating: boolean;
-  readonly submitting: boolean;
+  readonly status: FormStatus;
 }
 
 export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSchema> {
   readonly schema: TSchema;
-  readonly value?: InferInput<TSchema>;
+  readonly initialValue?: InferInput<TSchema>;
   readonly components?: FormComponents;
-  readonly validateOn?: ValidationMode | readonly ValidationMode[];
+  readonly validateOn?: ValidationEvent | readonly ValidationEvent[];
   readonly onValueChange?: ((value: InferInput<TSchema>) => void) | undefined;
   readonly onSubmit?: ((value: InferOutput<TSchema>) => void | Promise<void>) | undefined;
   readonly onReset?: ((value: InferInput<TSchema>) => void) | undefined;

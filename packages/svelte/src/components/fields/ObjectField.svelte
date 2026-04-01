@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { joinPath } from "@uniforma/core";
+  import { appendJsonPointer } from "@uniforma/core";
 
   import {
     getComponentFromContainer,
@@ -11,18 +11,7 @@
 
   let { form, schema, components, path }: FieldProps = $props();
 
-  let fieldErrors = $state<readonly string[]>([]);
-
-  $effect(() => {
-    const field = form.field(path);
-    const unsubscribeErrors = field.$errors.subscribe((nextErrors) => {
-      fieldErrors = nextErrors;
-    });
-
-    return () => {
-      unsubscribeErrors();
-    };
-  });
+  const fieldErrors = $derived(form.getFieldErrors(path));
 
   const entries = $derived(
     Object.entries(schema.properties ?? {}).map(([key, propertySchema]) => ({
@@ -41,12 +30,12 @@
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
   {#each entries as { key, propertySchema, FieldComponent, fieldProps } (key)}
-    <FieldComponent
-      {form}
-      schema={propertySchema}
-      {components}
-      path={joinPath(path, key)}
-      props={fieldProps}
-    />
-  {/each}
+      <FieldComponent
+        {form}
+        schema={propertySchema}
+        {components}
+        path={appendJsonPointer(path, key)}
+        props={fieldProps}
+      />
+    {/each}
 </Wrap>
