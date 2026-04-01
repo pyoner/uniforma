@@ -9,7 +9,6 @@
       .min(2, "Tell us your full name")
       .default("Ada Lovelace"),
     email: z
-      .string()
       .email("Use a valid email address")
       .default("ada@uniforma.dev"),
     role: z.enum(["maker", "researcher", "operator"]).default("maker"),
@@ -20,7 +19,7 @@
       seats: z.number().int().min(1).default(4),
     }),
     links: z
-      .array(z.string().url("Each link must be a URL"))
+      .array(z.url("Each link must be a URL"))
       .default(["https://uniforma.dev"]),
   });
 
