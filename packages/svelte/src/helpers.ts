@@ -1,16 +1,17 @@
 import { type NormalizedSchemaNode } from "@uniforma/core";
+import type { Component } from "svelte";
 
 import type { FormComponents, Props, SvelteComponentProps } from "./types.ts";
 
-export function getComponentFromContainer(container: SvelteComponentProps): unknown {
-  return Array.isArray(container) ? container[0] : container;
+export function getComponentFromContainer(container: SvelteComponentProps): Component<any> {
+  return Array.isArray(container) ? container[0] : (container as Component<any>);
 }
 
 export function getPropsFromContainer(container: SvelteComponentProps): Props {
   return Array.isArray(container) ? { ...container[1] } : {};
 }
 
-export function getComponent(container: SvelteComponentProps): unknown {
+export function getComponent(container: SvelteComponentProps): Component<any> {
   return getComponentFromContainer(container);
 }
 
