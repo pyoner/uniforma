@@ -3,9 +3,9 @@ import type { FlatFields } from "@uniforma/core";
 export function formDataToFlatFields(formData: FormData): FlatFields {
   const fields: FlatFields = {};
 
-  for (const [name, value] of formData.entries()) {
+  formData.forEach((value, name) => {
     fields[name] = value;
-  }
+  });
 
   return fields;
 }

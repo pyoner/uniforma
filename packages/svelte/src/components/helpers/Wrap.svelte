@@ -13,7 +13,7 @@
   }: {
     schema: NormalizedSchemaNode;
     component: SvelteComponentProps;
-    errors?: unknown;
+    errors?: readonly string[] | null;
     children?: Snippet;
   } = $props();
 
