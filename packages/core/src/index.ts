@@ -14,32 +14,19 @@ export {
   getDefaultValue,
   getEnumValues,
   getInputJsonSchema,
-  normalizeJsonSchema,
   resolveSchemaKind,
 } from "./schema.ts";
-export {
-  cloneValue,
-  flattenValue,
-  flattenValueAtPointer,
-  getValueAtPointer,
-  inflateValue,
-  normalizeFormValue,
-  replacePointerValue,
-  setValueAtPointer,
-} from "./values.ts";
+export { cloneValue, getValueAtPointer, normalizeFormValue, setValueAtPointer } from "./values.ts";
 
 export type {
   CreateFormControllerOptions,
-  FlatFields,
   FormController,
   FormStatus,
   JsonSchemaOptions,
   JsonPointer,
   JsonPointerSegment,
   JSONSchema,
-  NormalizedSchema,
   SchemaKind,
   UniformaSchema,
   ValidationEvent,
-  ValidationOptions,
 } from "./types.ts";

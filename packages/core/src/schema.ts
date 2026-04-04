@@ -1,14 +1,7 @@
 import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 
-import { appendJsonPointer } from "./paths.ts";
 import { cloneValue } from "./values.ts";
-import type {
-  JsonSchemaOptions,
-  JsonPointer,
-  JSONSchema,
-  NormalizedSchema,
-  SchemaKind,
-} from "./types.ts";
+import type { JsonSchemaOptions, JSONSchema, SchemaKind } from "./types.ts";
 
 const DEFAULT_TARGET: StandardJSONSchemaV1.Target = "draft-2020-12";
 
@@ -20,31 +13,6 @@ export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
     target: options.target ?? DEFAULT_TARGET,
     libraryOptions: options.libraryOptions,
   }) as JSONSchema;
-}
-
-export function normalizeJsonSchema(
-  schema: JSONSchema,
-  pointer: JsonPointer = "",
-): NormalizedSchema {
-  const kind = resolveSchemaKind(schema);
-  const node = { ...schema, pointer } as NormalizedSchema;
-
-  if (kind === "object") {
-    const properties: Record<string, NormalizedSchema> = {};
-    for (const [key, value] of Object.entries(schema.properties ?? {})) {
-      properties[key] = normalizeJsonSchema(value as JSONSchema, appendJsonPointer(pointer, key));
-    }
-    node.properties = properties;
-  }
-
-  if (kind === "array") {
-    const itemSchema = Array.isArray(schema.items) ? schema.items[0] : schema.items;
-    if (itemSchema) {
-      node.items = normalizeJsonSchema(itemSchema as JSONSchema, appendJsonPointer(pointer, 0));
-    }
-  }
-
-  return node;
 }
 
 export function getDefaultValue(schema: JSONSchema): unknown {
@@ -101,10 +69,10 @@ export function getEnumValues(schema: JSONSchema): readonly unknown[] | undefine
   return schema.enum ?? (schema.const === undefined ? undefined : [schema.const]);
 }
 
-export function getArrayItemSchema(schema: NormalizedSchema): NormalizedSchema | undefined {
+export function getArrayItemSchema(schema: JSONSchema): JSONSchema | undefined {
   if (!schema.items) {
     return undefined;
   }
 
-  return (Array.isArray(schema.items) ? schema.items[0] : schema.items) as NormalizedSchema;
+  return (Array.isArray(schema.items) ? schema.items[0] : schema.items) as JSONSchema;
 }

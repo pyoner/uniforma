@@ -16,6 +16,13 @@
   function updateValue(nextValue: string) {
     void form.setFieldValue(path, nextValue);
   }
+
+  function updateEnumValue(nextValue: string) {
+    const resolvedValue =
+      enumValues.find((candidate) => String(candidate) === nextValue) ??
+      nextValue;
+    void form.setFieldValue(path, resolvedValue);
+  }
 </script>
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
@@ -24,7 +31,7 @@
       name={path}
       value={String(currentValue ?? "")}
       onchange={(event) =>
-        updateValue((event.currentTarget as HTMLSelectElement).value)}
+        updateEnumValue((event.currentTarget as HTMLSelectElement).value)}
       onblur={() => void form.handleEvent("blur")}
     >
       {#each enumValues as option (String(option))}

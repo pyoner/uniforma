@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { createFormController } from "../src/index.ts";
 
-test("creates pointer-based initial fields from schema defaults", () => {
+test("creates an initial nested value from schema defaults", () => {
   const schema = z.object({
     profile: z.object({
       name: z.string().default("Ada"),
@@ -19,16 +19,12 @@ test("creates pointer-based initial fields from schema defaults", () => {
     tags: [],
     subscribed: false,
   });
-  expect(controller.initialFields).toEqual({
-    "/profile/name": "Ada",
-    "/subscribed": false,
-  });
   expect(controller.validateOn).toEqual(["submit"]);
   expect(controller.shouldValidate("submit")).toBe(true);
   expect(controller.shouldValidate("blur")).toBe(false);
 });
 
-test("validates flat fields and returns transformed output", async () => {
+test("validates nested values and returns transformed output", async () => {
   const schema = z.object({
     name: z.string().transform((value) => value.trim().toUpperCase()),
   });
@@ -39,7 +35,7 @@ test("validates flat fields and returns transformed output", async () => {
   });
 
   const result = await controller.validate({
-    "/name": " ada ",
+    name: " ada ",
   });
 
   expect(controller.shouldValidate("change")).toBe(true);

@@ -12,8 +12,8 @@ test("re-exports the core controller and pointer error helpers", async () => {
   const controller = createFormController({ schema });
 
   const result = await controller.validate({
-    "/name": "A",
-    "/subscribed": false,
+    name: "A",
+    subscribed: false,
   });
 
   expect(result.issues).toBeDefined();
@@ -30,9 +30,7 @@ test("returns typed output after validation", async () => {
   const schema = z.string().transform((value) => value.trim().toUpperCase());
   const controller = createFormController({ schema, initialValue: " ada " });
 
-  const result = await controller.validate({
-    "": " ada ",
-  });
+  const result = await controller.validate(" ada ");
 
   expect(result).toEqual({
     value: "ADA",

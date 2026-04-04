@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { StandardSchemaV1 } from "@standard-schema/spec";
   import {
+    cloneValue,
     createFormController,
     getMessagesAtPointer,
     getValueAtPointer,
     hasErrors,
-    replacePointerValue,
-    type FlatFields,
+    setValueAtPointer,
     type FormController,
     type FormStatus,
     type UniformaSchema,
@@ -38,7 +38,9 @@
   }: FormComponentProps = $props();
 
   let controller = $state<FormController<UniformaSchema> | null>(null);
-  let fields = $state<FlatFields>({});
+  let currentValue = $state<
+    StandardSchemaV1.InferInput<UniformaSchema> | undefined
+  >(undefined);
   let currentErrors = $state<StandardSchemaV1.FailureResult | null>(null);
   let status = $state<FormStatus>("idle");
   let lastSchema = $state<UniformaSchema | null>(null);
@@ -63,7 +65,9 @@
       ...(initialValue !== undefined ? { initialValue } : {}),
       ...(validateOn !== undefined ? { validateOn } : {}),
     });
-    fields = { ...controller.initialFields };
+    currentValue = cloneValue(controller.initialValue) as
+      | StandardSchemaV1.InferInput<UniformaSchema>
+      | undefined;
     currentErrors = null;
     status = "idle";
     lastSchema = schema;
@@ -71,16 +75,9 @@
     lastValidateOnKey = nextValidateOnKey;
   });
 
-  const currentValue = $derived(
-    controller
-      ? (controller.inflate(
-          fields,
-        ) as StandardSchemaV1.InferInput<UniformaSchema>)
-      : undefined,
-  );
-  const normalizedSchema = $derived(controller?.normalizedSchema ?? null);
+  const jsonSchema = $derived(controller?.jsonSchema ?? null);
   const rootField = $derived(
-    normalizedSchema ? getFieldComponent(normalizedSchema, components) : null,
+    jsonSchema ? getFieldComponent(jsonSchema, components) : null,
   );
   const LayoutComponent = $derived(
     getComponentFromContainer(components.layout),
@@ -90,21 +87,20 @@
     rootField ? getComponentFromContainer(rootField) : null,
   );
   const rootProps = $derived(
-    normalizedSchema && rootField ? getProps(rootField) : {},
+    jsonSchema && rootField ? getProps(rootField) : {},
   );
   const form = $derived<FormRuntime<UniformaSchema> | null>(
     controller
       ? {
           controller,
-          fields,
-          value: currentValue as StandardSchemaV1.InferInput<UniformaSchema>,
+          value: currentValue,
           errors: currentErrors,
           status,
           getFieldErrors(pointer) {
             return getMessagesAtPointer(currentErrors, pointer);
           },
           getFieldInput(pointer) {
-            return fields[pointer];
+            return getValueAtPointer(currentValue, pointer);
           },
           getFieldValue(pointer) {
             return getValueAtPointer(currentValue, pointer);
@@ -144,12 +140,13 @@
       return;
     }
 
-    fields = { ...controller.initialFields };
+    const nextValue = cloneValue(controller.initialValue) as
+      | StandardSchemaV1.InferInput<UniformaSchema>
+      | undefined;
+    currentValue = nextValue;
     currentErrors = null;
     status = "idle";
-    onReset?.(
-      controller.inflate(fields) as StandardSchemaV1.InferInput<UniformaSchema>,
-    );
+    onReset?.(nextValue);
   }
 
   async function updateFieldValue(pointer: string, value: unknown) {
@@ -157,13 +154,11 @@
       return;
     }
 
-    const nextFields = replacePointerValue(fields, pointer, value);
-    fields = nextFields;
-    onValueChange?.(
-      controller.inflate(
-        nextFields,
-      ) as StandardSchemaV1.InferInput<UniformaSchema>,
-    );
+    const nextValue = setValueAtPointer(currentValue, pointer, value) as
+      | StandardSchemaV1.InferInput<UniformaSchema>
+      | undefined;
+    currentValue = nextValue;
+    onValueChange?.(nextValue);
     await handleEvent("change");
   }
 
@@ -181,7 +176,7 @@
     }
 
     status = event === "submit" ? "submitting" : "validating";
-    const result = await controller.validate(fields);
+    const result = await controller.validate(currentValue);
     currentErrors = result.issues ? result : null;
     status = "idle";
     return result;
@@ -218,10 +213,10 @@
 >
   <LayoutComponent {...layoutProps}>
     {#snippet fields()}
-      {#if form && normalizedSchema && RootComponent}
+      {#if form && jsonSchema && RootComponent}
         <RootComponent
           {form}
-          schema={normalizedSchema}
+          schema={jsonSchema}
           {components}
           path=""
           props={rootProps}

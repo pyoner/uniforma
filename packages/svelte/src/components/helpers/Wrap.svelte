@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { resolveSchemaKind, type NormalizedSchema } from "@uniforma/core";
+  import { resolveSchemaKind, type JSONSchema } from "@uniforma/core";
   import { getComponent, getFieldErrors, getProps } from "../../helpers.ts";
   import type { SvelteComponentProps } from "../../types.ts";
 
@@ -11,7 +11,7 @@
     errors = null,
     children,
   }: {
-    schema: NormalizedSchema;
+    schema: JSONSchema;
     component: SvelteComponentProps;
     errors?: readonly string[] | null;
     children?: Snippet;

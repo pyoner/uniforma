@@ -13,7 +13,16 @@
   const schemaKind = $derived(resolveSchemaKind(schema));
 
   function updateValue(nextValue: string) {
-    void form.setFieldValue(path, nextValue === "" ? undefined : nextValue);
+    if (nextValue === "") {
+      void form.setFieldValue(path, undefined);
+      return;
+    }
+
+    const parsedValue = Number(nextValue);
+    void form.setFieldValue(
+      path,
+      Number.isNaN(parsedValue) ? nextValue : parsedValue,
+    );
   }
 </script>
 

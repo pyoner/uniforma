@@ -1,10 +1,9 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
-  FlatFields,
   FormController,
   FormStatus,
   JsonPointer,
-  NormalizedSchema,
+  JSONSchema,
   UniformaSchema,
   ValidationEvent,
 } from "@uniforma/core";
@@ -35,7 +34,7 @@ export interface FormComponents {
 
 export interface FieldProps {
   readonly form: FormRuntime<any>;
-  readonly schema: NormalizedSchema;
+  readonly schema: JSONSchema;
   readonly components: FormComponents;
   readonly path: JsonPointer;
   readonly props?: Props;
@@ -43,8 +42,7 @@ export interface FieldProps {
 
 export interface FormRuntime<TSchema extends UniformaSchema = UniformaSchema> {
   readonly controller: FormController<TSchema>;
-  readonly fields: FlatFields;
-  readonly value: StandardSchemaV1.InferInput<TSchema>;
+  readonly value: StandardSchemaV1.InferInput<TSchema> | undefined;
   readonly errors: StandardSchemaV1.FailureResult | null;
   readonly status: FormStatus;
   getFieldErrors: (pointer: JsonPointer) => readonly string[];
@@ -67,10 +65,14 @@ export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSch
   readonly initialValue?: StandardSchemaV1.InferInput<TSchema>;
   readonly components?: FormComponents;
   readonly validateOn?: ValidationEvent | readonly ValidationEvent[];
-  readonly onValueChange?: ((value: StandardSchemaV1.InferInput<TSchema>) => void) | undefined;
+  readonly onValueChange?:
+    | ((value: StandardSchemaV1.InferInput<TSchema> | undefined) => void)
+    | undefined;
   readonly onSubmit?:
     | ((value: StandardSchemaV1.InferOutput<TSchema>) => void | Promise<void>)
     | undefined;
-  readonly onReset?: ((value: StandardSchemaV1.InferInput<TSchema>) => void) | undefined;
+  readonly onReset?:
+    | ((value: StandardSchemaV1.InferInput<TSchema> | undefined) => void)
+    | undefined;
   readonly controls?: Snippet<[FormRenderState]> | undefined;
 }

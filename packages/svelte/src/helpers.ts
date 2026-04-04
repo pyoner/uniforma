@@ -1,4 +1,4 @@
-import { resolveSchemaKind, type NormalizedSchema } from "@uniforma/core";
+import { resolveSchemaKind, type JSONSchema } from "@uniforma/core";
 import type { Component } from "svelte";
 
 import type { FormComponents, Props, SvelteComponentProps } from "./types.ts";
@@ -20,7 +20,7 @@ export function getProps(container: SvelteComponentProps): Props {
 }
 
 export function getFieldComponent(
-  schema: NormalizedSchema,
+  schema: JSONSchema,
   components: FormComponents,
 ): SvelteComponentProps {
   switch (resolveSchemaKind(schema)) {

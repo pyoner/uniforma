@@ -2,10 +2,11 @@ import { expect, test } from "vite-plus/test";
 import { z } from "zod";
 
 import {
+  getArrayItemSchema,
   getDefaultValue,
   getInputJsonSchema,
-  normalizeJsonSchema,
   resolveSchemaKind,
+  type JSONSchema,
 } from "../src/index.ts";
 
 test("extracts JSON Schema from a dual standard schema", () => {
@@ -18,14 +19,16 @@ test("extracts JSON Schema from a dual standard schema", () => {
   });
 
   const jsonSchema = getInputJsonSchema(schema);
-  const normalized = normalizeJsonSchema(jsonSchema);
+  const profileSchema = jsonSchema.properties?.profile as JSONSchema | undefined;
+  const tagsSchema = jsonSchema.properties?.tags as JSONSchema | undefined;
 
-  expect(resolveSchemaKind(normalized)).toBe("object");
-  if (normalized.properties?.profile) {
-    expect(resolveSchemaKind(normalized.properties.profile)).toBe("object");
+  expect(resolveSchemaKind(jsonSchema)).toBe("object");
+  if (profileSchema) {
+    expect(resolveSchemaKind(profileSchema)).toBe("object");
   }
-  if (normalized.properties?.tags) {
-    expect(resolveSchemaKind(normalized.properties.tags)).toBe("array");
+  if (tagsSchema) {
+    expect(resolveSchemaKind(tagsSchema)).toBe("array");
+    expect(resolveSchemaKind(getArrayItemSchema(tagsSchema) ?? tagsSchema)).toBe("string");
   }
   expect(getDefaultValue(jsonSchema)).toEqual({
     profile: {
