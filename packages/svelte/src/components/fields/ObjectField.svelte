@@ -9,30 +9,40 @@
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  let { form, schema, components, path }: FieldProps = $props();
+  let { form, schema, components, path, initialValue }: FieldProps = $props();
 
   const fieldErrors = $derived(form.getFieldErrors(path));
 
   const entries = $derived(
-    Object.entries(schema.properties ?? {}).map(([key, propertySchema]) => ({
-      key,
-      propertySchema,
-      FieldComponent: getComponentFromContainer(
-        getFieldComponent(propertySchema, components),
-      ),
-      fieldProps: getProps(getFieldComponent(propertySchema, components)),
-    })),
+    Object.entries(schema.properties ?? {})
+      .filter(
+        ([, propertySchema]) =>
+          propertySchema && typeof propertySchema !== "boolean",
+      )
+      .map(([key, propertySchema]) => ({
+        key,
+        propertySchema,
+        initialValue:
+          initialValue && typeof initialValue === "object"
+            ? (initialValue as Record<string, unknown>)[key]
+            : undefined,
+        FieldComponent: getComponentFromContainer(
+          getFieldComponent(propertySchema, components),
+        ),
+        fieldProps: getProps(getFieldComponent(propertySchema, components)),
+      })),
   );
 </script>
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
-  {#each entries as { key, propertySchema, FieldComponent, fieldProps } (key)}
-      <FieldComponent
-        {form}
-        schema={propertySchema}
-        {components}
-        path={appendJsonPointer(path, key)}
-        props={fieldProps}
-      />
-    {/each}
+  {#each entries as { key, propertySchema, initialValue, FieldComponent, fieldProps } (key)}
+    <FieldComponent
+      {form}
+      schema={propertySchema}
+      {components}
+      path={appendJsonPointer(path, key)}
+      {initialValue}
+      props={fieldProps}
+    />
+  {/each}
 </Wrap>

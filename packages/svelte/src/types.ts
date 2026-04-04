@@ -37,18 +37,15 @@ export interface FieldProps {
   readonly schema: JSONSchema;
   readonly components: FormComponents;
   readonly path: JsonPointer;
+  readonly initialValue?: unknown;
   readonly props?: Props;
 }
 
 export interface FormRuntime<TSchema extends UniformaSchema = UniformaSchema> {
   readonly controller: FormController<TSchema>;
-  readonly value: StandardSchemaV1.InferInput<TSchema> | undefined;
   readonly errors: StandardSchemaV1.FailureResult | null;
   readonly status: FormStatus;
   getFieldErrors: (pointer: JsonPointer) => readonly string[];
-  getFieldInput: (pointer: JsonPointer) => unknown;
-  getFieldValue: (pointer: JsonPointer) => unknown;
-  setFieldValue: (pointer: JsonPointer, value: unknown) => Promise<void>;
   handleEvent: (event: ValidationEvent) => Promise<void>;
   reset: () => void;
 }

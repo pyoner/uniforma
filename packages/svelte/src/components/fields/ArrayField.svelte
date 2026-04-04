@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import {
     appendJsonPointer,
     getArrayItemSchema,
@@ -14,11 +15,37 @@
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  let { form, schema, components, path }: FieldProps = $props();
+  interface ArrayItemState {
+    readonly id: string;
+    readonly initialValue: unknown;
+  }
 
-  const items = $derived(
-    (form.getFieldValue(path) as unknown[] | undefined) ?? [],
-  );
+  let { form, schema, components, path, initialValue }: FieldProps = $props();
+
+  let nextItemId = 0;
+  let hasInitialized = false;
+
+  function createArrayItemState(value: unknown): ArrayItemState {
+    nextItemId += 1;
+    return {
+      id: `${path || "root"}-${nextItemId}`,
+      initialValue: value,
+    };
+  }
+
+  let items = $state<ArrayItemState[]>([]);
+
+  $effect(() => {
+    if (hasInitialized) {
+      return;
+    }
+
+    items = (Array.isArray(initialValue) ? initialValue : []).map((value) =>
+      createArrayItemState(value),
+    );
+    hasInitialized = true;
+  });
+
   const fieldErrors = $derived(form.getFieldErrors(path));
   const arrayItemSchema = $derived(getArrayItemSchema(schema));
   const itemSchema = $derived(arrayItemSchema ?? schema);
@@ -40,39 +67,45 @@
   );
   const addItemProps = $derived(getPropsFromContainer(components.addItem));
 
-  function removeItem(index: number) {
-    const next = items.filter((_, itemIndex) => itemIndex !== index);
-    void form.setFieldValue(path, next);
+  async function removeItem(index: number) {
+    items = items.filter((_, itemIndex) => itemIndex !== index);
+    await tick();
+    await form.handleEvent("change");
   }
 
-  function moveItem(index: number, position: number) {
+  async function moveItem(index: number, position: number) {
     if (position < 0 || position >= items.length) {
       return;
     }
 
-    const next = [...items];
-    const current = next[index];
-    next[index] = next[position];
-    next[position] = current;
-    void form.setFieldValue(path, next);
+    const nextItems = [...items];
+    const current = nextItems[index];
+    nextItems[index] = nextItems[position];
+    nextItems[position] = current;
+    items = nextItems;
+    await tick();
+    await form.handleEvent("change");
   }
 
-  function addItem() {
+  async function addItem() {
     const nextItem = arrayItemSchema
       ? (getDefaultValue(arrayItemSchema) ?? null)
       : null;
-    void form.setFieldValue(path, [...items, nextItem]);
+    items = [...items, createArrayItemState(nextItem)];
+    await tick();
+    await form.handleEvent("change");
   }
 </script>
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
-  {#each items as _, index (index)}
+  {#each items as item, index (item.id)}
     <ItemWrapperComponent {...itemWrapperProps}>
       <ItemFieldComponent
         {form}
         schema={itemSchema}
         {components}
         path={appendJsonPointer(path, index)}
+        initialValue={item.initialValue}
         props={itemFieldProps}
       />
 

@@ -4,9 +4,7 @@
     cloneValue,
     createFormController,
     getMessagesAtPointer,
-    getValueAtPointer,
     hasErrors,
-    setValueAtPointer,
     type FormController,
     type FormStatus,
     type UniformaSchema,
@@ -24,6 +22,7 @@
     FormRuntime,
     FormRenderState,
   } from "../types.ts";
+  import { readFormValue } from "../dom.ts";
   import { defaultFormComponents as componentsFallback } from "./defaults.ts";
 
   let {
@@ -38,11 +37,10 @@
   }: FormComponentProps = $props();
 
   let controller = $state<FormController<UniformaSchema> | null>(null);
-  let currentValue = $state<
-    StandardSchemaV1.InferInput<UniformaSchema> | undefined
-  >(undefined);
+  let formElement = $state<HTMLFormElement | null>(null);
   let currentErrors = $state<StandardSchemaV1.FailureResult | null>(null);
   let status = $state<FormStatus>("idle");
+  let renderVersion = $state(0);
   let lastSchema = $state<UniformaSchema | null>(null);
   let lastInitialValueKey = $state<string | undefined>(undefined);
   let lastValidateOnKey = $state<string>("submit");
@@ -65,11 +63,9 @@
       ...(initialValue !== undefined ? { initialValue } : {}),
       ...(validateOn !== undefined ? { validateOn } : {}),
     });
-    currentValue = cloneValue(controller.initialValue) as
-      | StandardSchemaV1.InferInput<UniformaSchema>
-      | undefined;
     currentErrors = null;
     status = "idle";
+    renderVersion += 1;
     lastSchema = schema;
     lastInitialValueKey = nextInitialValueKey;
     lastValidateOnKey = nextValidateOnKey;
@@ -93,20 +89,10 @@
     controller
       ? {
           controller,
-          value: currentValue,
           errors: currentErrors,
           status,
           getFieldErrors(pointer) {
             return getMessagesAtPointer(currentErrors, pointer);
-          },
-          getFieldInput(pointer) {
-            return getValueAtPointer(currentValue, pointer);
-          },
-          getFieldValue(pointer) {
-            return getValueAtPointer(currentValue, pointer);
-          },
-          setFieldValue(pointer, value) {
-            return updateFieldValue(pointer, value);
           },
           handleEvent(event) {
             return handleEvent(event);
@@ -140,46 +126,57 @@
       return;
     }
 
-    const nextValue = cloneValue(controller.initialValue) as
-      | StandardSchemaV1.InferInput<UniformaSchema>
-      | undefined;
-    currentValue = nextValue;
     currentErrors = null;
     status = "idle";
-    onReset?.(nextValue);
+    renderVersion += 1;
+    onReset?.(
+      cloneValue(controller.initialValue) as
+        | StandardSchemaV1.InferInput<UniformaSchema>
+        | undefined,
+    );
   }
 
-  async function updateFieldValue(pointer: string, value: unknown) {
+  async function handleEvent(event: "blur" | "change" | "submit") {
     if (!controller) {
       return;
     }
 
-    const nextValue = setValueAtPointer(currentValue, pointer, value) as
-      | StandardSchemaV1.InferInput<UniformaSchema>
-      | undefined;
-    currentValue = nextValue;
-    onValueChange?.(nextValue);
-    await handleEvent("change");
-  }
+    const nextValue = readCurrentValue();
 
-  async function handleEvent(event: "blur" | "change" | "submit") {
-    if (!controller || !controller.shouldValidate(event)) {
+    if (event === "change") {
+      onValueChange?.(
+        nextValue as StandardSchemaV1.InferInput<UniformaSchema> | undefined,
+      );
+    }
+
+    if (!controller.shouldValidate(event)) {
       return;
     }
 
-    await validateFields(event);
+    await validateFields(event, nextValue);
   }
 
-  async function validateFields(event: "blur" | "change" | "submit") {
+  async function validateFields(
+    event: "blur" | "change" | "submit",
+    value = readCurrentValue(),
+  ) {
     if (!controller) {
       throw new Error("controller is not ready");
     }
 
     status = event === "submit" ? "submitting" : "validating";
-    const result = await controller.validate(currentValue);
+    const result = await controller.validate(value);
     currentErrors = result.issues ? result : null;
     status = "idle";
     return result;
+  }
+
+  function readCurrentValue(): unknown {
+    if (!controller || !formElement) {
+      return cloneValue(controller?.initialValue);
+    }
+
+    return readFormValue(formElement, controller.jsonSchema);
   }
 
   function toValidateOnKey(
@@ -202,6 +199,7 @@
 </script>
 
 <form
+  bind:this={formElement}
   onsubmit={(event) => {
     event.preventDefault();
     void submit();
@@ -214,13 +212,16 @@
   <LayoutComponent {...layoutProps}>
     {#snippet fields()}
       {#if form && jsonSchema && RootComponent}
-        <RootComponent
-          {form}
-          schema={jsonSchema}
-          {components}
-          path=""
-          props={rootProps}
-        />
+        {#key renderVersion}
+          <RootComponent
+            {form}
+            schema={jsonSchema}
+            {components}
+            path=""
+            initialValue={controller?.initialValue}
+            props={rootProps}
+          />
+        {/key}
       {/if}
     {/snippet}
 
