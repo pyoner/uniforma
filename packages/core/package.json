@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "@standard-schema/spec": "catalog:",
-    "json-pointer": "catalog:"
+    "json-pointer": "catalog:",
+    "json-schema-typed": "catalog:"
   },
   "devDependencies": {
     "@types/json-pointer": "catalog:",

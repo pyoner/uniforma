@@ -9,6 +9,7 @@ export {
   segmentsToPointer,
   unescapeJsonPointerToken,
 } from "./paths.ts";
+export { Uniforma, issuePathToJsonPointer, issuePathToSegments } from "./spec.ts";
 export {
   getDefaultValue,
   getInputJsonSchema,
