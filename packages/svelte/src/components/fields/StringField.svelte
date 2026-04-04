@@ -1,11 +1,17 @@
 <script lang="ts">
+  import { getEnumValues, resolveSchemaKind } from "@uniforma/core";
+
   import type { FieldProps } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
   let { form, schema, components, path }: FieldProps = $props();
 
-  const currentValue = $derived(form.getFieldInput(path) as string | null | undefined);
+  const currentValue = $derived(
+    form.getFieldInput(path) as string | null | undefined,
+  );
   const fieldErrors = $derived(form.getFieldErrors(path));
+  const schemaKind = $derived(resolveSchemaKind(schema));
+  const enumValues = $derived(getEnumValues(schema) ?? []);
 
   function updateValue(nextValue: string) {
     void form.setFieldValue(path, nextValue);
@@ -13,7 +19,7 @@
 </script>
 
 <Wrap {schema} component={components.wrapper} errors={fieldErrors}>
-  {#if schema.kind === "enum" && (schema.enumValues?.length ?? 0) > 0}
+  {#if schemaKind === "enum" && enumValues.length > 0}
     <select
       name={path}
       value={String(currentValue ?? "")}
@@ -21,7 +27,7 @@
         updateValue((event.currentTarget as HTMLSelectElement).value)}
       onblur={() => void form.handleEvent("blur")}
     >
-      {#each schema.enumValues ?? [] as option (String(option))}
+      {#each enumValues as option (String(option))}
         <option value={String(option)}>{String(option)}</option>
       {/each}
     </select>

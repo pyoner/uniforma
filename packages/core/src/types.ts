@@ -22,19 +22,11 @@ export type SchemaKind =
   | "string"
   | "unsupported";
 
-export interface NormalizedSchemaNode {
-  readonly kind: SchemaKind;
-  readonly pointer: JsonPointer;
-  readonly title?: string | undefined;
-  readonly description?: string | undefined;
-  readonly format?: string | undefined;
-  readonly defaultValue?: unknown;
-  readonly enumValues?: readonly unknown[] | undefined;
-  readonly required?: readonly string[] | undefined;
-  readonly properties?: Readonly<Record<string, NormalizedSchemaNode>> | undefined;
-  readonly item?: NormalizedSchemaNode | undefined;
-  readonly raw: JSONSchema;
-}
+export type NormalizedSchema = JSONSchema & {
+  pointer: JsonPointer;
+  properties?: Record<string, NormalizedSchema>;
+  items?: NormalizedSchema | readonly NormalizedSchema[];
+};
 
 export interface JsonSchemaOptions {
   readonly target?: StandardJSONSchemaV1.Target;
@@ -59,7 +51,7 @@ export interface CreateFormControllerOptions<TSchema extends UniformaSchema> {
 export interface FormController<TSchema extends UniformaSchema> {
   readonly schema: TSchema;
   readonly jsonSchema: JSONSchema;
-  readonly normalizedSchema: NormalizedSchemaNode;
+  readonly normalizedSchema: NormalizedSchema;
   readonly initialValue: StandardSchemaV1.InferInput<TSchema> | undefined;
   readonly initialFields: FlatFields;
   readonly validateOn: readonly ValidationEvent[];

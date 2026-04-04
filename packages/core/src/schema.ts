@@ -2,12 +2,15 @@ import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 
 import { appendJsonPointer } from "./paths.ts";
 import { cloneValue } from "./values.ts";
-import type { JsonSchemaOptions, JSONSchema, NormalizedSchemaNode } from "./types.ts";
+import type {
+  JsonSchemaOptions,
+  JsonPointer,
+  JSONSchema,
+  NormalizedSchema,
+  SchemaKind,
+} from "./types.ts";
 
 const DEFAULT_TARGET: StandardJSONSchemaV1.Target = "draft-2020-12";
-type MutableNormalizedNode = {
-  -readonly [Key in keyof NormalizedSchemaNode]: NormalizedSchemaNode[Key];
-};
 
 export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
   schema: TSchema,
@@ -21,26 +24,13 @@ export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
 
 export function normalizeJsonSchema(
   schema: JSONSchema,
-  pointer: NormalizedSchemaNode["pointer"] = "",
-): NormalizedSchemaNode {
+  pointer: JsonPointer = "",
+): NormalizedSchema {
   const kind = resolveSchemaKind(schema);
-  const node: MutableNormalizedNode = {
-    kind,
-    pointer,
-    title: schema.title,
-    description: schema.description,
-    format: schema.format,
-    defaultValue: schema.default,
-    raw: schema,
-  };
-
-  if (kind === "enum") {
-    node.enumValues = schema.enum ?? (schema.const === undefined ? undefined : [schema.const]);
-  }
+  const node = { ...schema, pointer } as NormalizedSchema;
 
   if (kind === "object") {
-    node.required = schema.required;
-    const properties: Record<string, NormalizedSchemaNode> = {};
+    const properties: Record<string, NormalizedSchema> = {};
     for (const [key, value] of Object.entries(schema.properties ?? {})) {
       properties[key] = normalizeJsonSchema(value as JSONSchema, appendJsonPointer(pointer, key));
     }
@@ -50,7 +40,7 @@ export function normalizeJsonSchema(
   if (kind === "array") {
     const itemSchema = Array.isArray(schema.items) ? schema.items[0] : schema.items;
     if (itemSchema) {
-      node.item = normalizeJsonSchema(itemSchema as JSONSchema, appendJsonPointer(pointer, 0));
+      node.items = normalizeJsonSchema(itemSchema as JSONSchema, appendJsonPointer(pointer, 0));
     }
   }
 
@@ -84,7 +74,7 @@ export function getDefaultValue(schema: JSONSchema): unknown {
   }
 }
 
-function resolveSchemaKind(schema: JSONSchema): NormalizedSchemaNode["kind"] {
+export function resolveSchemaKind(schema: JSONSchema): SchemaKind {
   if (schema.const !== undefined || (schema.enum?.length ?? 0) > 0) {
     return "enum";
   }
@@ -101,8 +91,20 @@ function resolveSchemaKind(schema: JSONSchema): NormalizedSchemaNode["kind"] {
     case "number":
     case "object":
     case "string":
-      return resolvedType;
+      return resolvedType as SchemaKind;
     default:
       return schema.properties ? "object" : schema.items ? "array" : "unsupported";
   }
+}
+
+export function getEnumValues(schema: JSONSchema): readonly unknown[] | undefined {
+  return schema.enum ?? (schema.const === undefined ? undefined : [schema.const]);
+}
+
+export function getArrayItemSchema(schema: NormalizedSchema): NormalizedSchema | undefined {
+  if (!schema.items) {
+    return undefined;
+  }
+
+  return (Array.isArray(schema.items) ? schema.items[0] : schema.items) as NormalizedSchema;
 }

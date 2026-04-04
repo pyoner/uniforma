@@ -4,7 +4,7 @@ import type {
   FormController,
   FormStatus,
   JsonPointer,
-  NormalizedSchemaNode,
+  NormalizedSchema,
   UniformaSchema,
   ValidationEvent,
 } from "@uniforma/core";
@@ -35,7 +35,7 @@ export interface FormComponents {
 
 export interface FieldProps {
   readonly form: FormRuntime<any>;
-  readonly schema: NormalizedSchemaNode;
+  readonly schema: NormalizedSchema;
   readonly components: FormComponents;
   readonly path: JsonPointer;
   readonly props?: Props;

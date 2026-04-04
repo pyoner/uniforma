@@ -1,7 +1,8 @@
 import pointer from "json-pointer";
 
 import { appendJsonPointer, isJsonPointerDescendant, unescapeJsonPointerToken } from "./paths.ts";
-import type { FlatFields, JsonPointer, NormalizedSchemaNode } from "./types.ts";
+import { getArrayItemSchema, getEnumValues, resolveSchemaKind } from "./schema.ts";
+import type { FlatFields, JsonPointer, NormalizedSchema } from "./types.ts";
 
 export function normalizeFormValue<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -67,7 +68,7 @@ export function flattenValueAtPointer(path: JsonPointer, value: unknown): FlatFi
   return result;
 }
 
-export function inflateValue(fields: FlatFields, schema: NormalizedSchemaNode): unknown {
+export function inflateValue(fields: FlatFields, schema: NormalizedSchema): unknown {
   return inflateNode(fields, schema, schema.pointer);
 }
 
@@ -116,10 +117,10 @@ function flattenInto(result: FlatFields, path: JsonPointer, value: unknown): voi
 
 function inflateNode(
   fields: FlatFields,
-  schema: NormalizedSchemaNode,
+  schema: NormalizedSchema,
   currentPointer: JsonPointer,
 ): unknown {
-  switch (schema.kind) {
+  switch (resolveSchemaKind(schema)) {
     case "object":
       return inflateObject(fields, schema, currentPointer);
     case "array":
@@ -132,7 +133,7 @@ function inflateNode(
     case "null":
       return inflateNull(fields[currentPointer]);
     case "enum":
-      return inflateEnum(fields[currentPointer], schema.enumValues);
+      return inflateEnum(fields[currentPointer], getEnumValues(schema));
     case "string":
     case "unsupported":
     default:
@@ -142,14 +143,14 @@ function inflateNode(
 
 function inflateObject(
   fields: FlatFields,
-  schema: NormalizedSchemaNode,
+  schema: NormalizedSchema,
   currentPointer: JsonPointer,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const [key, propertySchema] of Object.entries(schema.properties ?? {})) {
     const nextPointer = appendJsonPointer(currentPointer, key);
-    const nextValue = inflateNode(fields, propertySchema, nextPointer);
+    const nextValue = inflateNode(fields, propertySchema as NormalizedSchema, nextPointer);
     if (nextValue !== undefined) {
       result[key] = nextValue;
     }
@@ -160,19 +161,16 @@ function inflateObject(
 
 function inflateArray(
   fields: FlatFields,
-  schema: NormalizedSchemaNode,
+  schema: NormalizedSchema,
   currentPointer: JsonPointer,
 ): unknown[] {
-  if (!schema.item) {
+  const itemSchema = getArrayItemSchema(schema);
+  if (!itemSchema) {
     return [];
   }
 
   return collectArrayIndices(fields, currentPointer).map((index) =>
-    inflateNode(
-      fields,
-      schema.item as NormalizedSchemaNode,
-      appendJsonPointer(currentPointer, index),
-    ),
+    inflateNode(fields, itemSchema, appendJsonPointer(currentPointer, index)),
   );
 }
 

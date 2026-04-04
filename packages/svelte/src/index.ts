@@ -21,7 +21,7 @@ export type {
   FormStatus,
   JsonPointer,
   JSONSchema,
-  NormalizedSchemaNode,
+  NormalizedSchema,
   UniformaSchema,
   ValidationEvent,
 } from "@uniforma/core";

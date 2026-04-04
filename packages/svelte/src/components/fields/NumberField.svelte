@@ -1,17 +1,16 @@
 <script lang="ts">
+  import { resolveSchemaKind } from "@uniforma/core";
+
   import type { FieldProps, Props } from "../../types.ts";
   import Wrap from "../helpers/Wrap.svelte";
 
-  let {
-    form,
-    schema,
-    components,
-    path,
-    props = {},
-  }: FieldProps = $props();
+  let { form, schema, components, path, props = {} }: FieldProps = $props();
 
-  const currentValue = $derived(form.getFieldInput(path) as string | number | null | undefined);
+  const currentValue = $derived(
+    form.getFieldInput(path) as string | number | null | undefined,
+  );
   const fieldErrors = $derived(form.getFieldErrors(path));
+  const schemaKind = $derived(resolveSchemaKind(schema));
 
   function updateValue(nextValue: string) {
     void form.setFieldValue(path, nextValue === "" ? undefined : nextValue);
@@ -22,7 +21,7 @@
   <input
     type="number"
     name={path}
-    step={schema.kind === "integer"
+    step={schemaKind === "integer"
       ? "1"
       : String(((props as Props).step as string | undefined) ?? "any")}
     value={currentValue ?? ""}

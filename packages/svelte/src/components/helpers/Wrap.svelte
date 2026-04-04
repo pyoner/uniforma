@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { resolveSchemaKind, type NormalizedSchema } from "@uniforma/core";
   import { getComponent, getFieldErrors, getProps } from "../../helpers.ts";
-  import type { NormalizedSchemaNode } from "@uniforma/core";
   import type { SvelteComponentProps } from "../../types.ts";
 
   let {
@@ -11,7 +11,7 @@
     errors = null,
     children,
   }: {
-    schema: NormalizedSchemaNode;
+    schema: NormalizedSchema;
     component: SvelteComponentProps;
     errors?: readonly string[] | null;
     children?: Snippet;
@@ -20,13 +20,14 @@
   const WrapperComponent = $derived(getComponent(component));
   const wrapperProps = $derived(getProps(component));
   const fieldErrors = $derived(getFieldErrors(errors));
+  const schemaKind = $derived(resolveSchemaKind(schema));
 </script>
 
 <WrapperComponent
   {...wrapperProps}
   title={schema.title}
   description={schema.description}
-  isFieldset={schema.kind === "object" || schema.kind === "array"}
+  isFieldset={schemaKind === "object" || schemaKind === "array"}
   errors={fieldErrors}
 >
   {@render children?.()}

@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { appendJsonPointer, getDefaultValue } from "@uniforma/core";
+  import {
+    appendJsonPointer,
+    getArrayItemSchema,
+    getDefaultValue,
+  } from "@uniforma/core";
 
   import {
     getComponentFromContainer,
@@ -12,9 +16,12 @@
 
   let { form, schema, components, path }: FieldProps = $props();
 
-  const items = $derived((form.getFieldValue(path) as unknown[] | undefined) ?? []);
+  const items = $derived(
+    (form.getFieldValue(path) as unknown[] | undefined) ?? [],
+  );
   const fieldErrors = $derived(form.getFieldErrors(path));
-  const itemSchema = $derived(schema.item ?? schema);
+  const arrayItemSchema = $derived(getArrayItemSchema(schema));
+  const itemSchema = $derived(arrayItemSchema ?? schema);
   const itemComponent = $derived(getFieldComponent(itemSchema, components));
   const ItemFieldComponent = $derived(getComponentFromContainer(itemComponent));
   const itemFieldProps = $derived(getProps(itemComponent));
@@ -51,7 +58,9 @@
   }
 
   function addItem() {
-    const nextItem = schema.item ? (getDefaultValue(schema.item.raw) ?? null) : null;
+    const nextItem = arrayItemSchema
+      ? (getDefaultValue(arrayItemSchema) ?? null)
+      : null;
     void form.setFieldValue(path, [...items, nextItem]);
   }
 </script>

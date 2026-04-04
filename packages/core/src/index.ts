@@ -9,7 +9,14 @@ export {
   segmentsToPointer,
   unescapeJsonPointerToken,
 } from "./paths.ts";
-export { getDefaultValue, getInputJsonSchema, normalizeJsonSchema } from "./schema.ts";
+export {
+  getArrayItemSchema,
+  getDefaultValue,
+  getEnumValues,
+  getInputJsonSchema,
+  normalizeJsonSchema,
+  resolveSchemaKind,
+} from "./schema.ts";
 export {
   cloneValue,
   flattenValue,
@@ -30,7 +37,7 @@ export type {
   JsonPointer,
   JsonPointerSegment,
   JSONSchema,
-  NormalizedSchemaNode,
+  NormalizedSchema,
   SchemaKind,
   UniformaSchema,
   ValidationEvent,
