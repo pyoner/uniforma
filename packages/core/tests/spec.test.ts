@@ -37,7 +37,7 @@ test("exposes generated JSON Schema through Uniforma", () => {
   });
 });
 
-test("normalizes validation results through Uniforma", async () => {
+test("forwards Standard Schema validation results through Uniforma", async () => {
   const schema = z.object({
     profile: z.object({
       name: z.string().min(2, "Name is too short"),
@@ -49,11 +49,10 @@ test("normalizes validation results through Uniforma", async () => {
     profile: { name: "A" },
   });
 
-  expect(result.success).toBe(false);
-  if (result.success) {
+  expect(result.issues).toHaveLength(1);
+  if (!result.issues) {
     throw new Error("expected validation to fail");
   }
 
-  expect(result.error.issues).toHaveLength(1);
-  expect(issuePathToJsonPointer(result.error.issues[0]?.path)).toBe("/profile/name");
+  expect(issuePathToJsonPointer(result.issues[0]?.path)).toBe("/profile/name");
 });

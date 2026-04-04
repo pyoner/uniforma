@@ -19,18 +19,6 @@ export interface ValidationOptions {
   readonly libraryOptions?: Record<string, unknown>;
 }
 
-export interface ValidationSuccess<TOutput> {
-  readonly success: true;
-  readonly value: TOutput;
-}
-
-export interface ValidationFailure {
-  readonly success: false;
-  readonly error: StandardSchemaV1.FailureResult;
-}
-
-export type ValidationResult<TOutput> = ValidationSuccess<TOutput> | ValidationFailure;
-
 export function issuePathToSegments(
   path: StandardSchemaV1.Issue["path"] | null | undefined,
 ): string[] {
@@ -77,29 +65,12 @@ export class Uniforma<Input = unknown, Output = Input> {
     }) as UniformaJSONSchema;
   }
 
-  validate(data: unknown, options: ValidationOptions = {}): Promise<ValidationResult<Output>> {
-    return normalizeValidationResult(this.standardSchema, data, options);
+  validate(
+    data: unknown,
+    options: ValidationOptions = {},
+  ): ReturnType<StandardSchemaV1<Input, Output>["~standard"]["validate"]> {
+    return this.standardSchema["~standard"].validate(data, {
+      libraryOptions: options.libraryOptions,
+    });
   }
-}
-
-async function normalizeValidationResult<Input, Output>(
-  schema: StandardSchemaV1<Input, Output>,
-  data: unknown,
-  options: ValidationOptions,
-): Promise<ValidationResult<Output>> {
-  const result = await schema["~standard"].validate(data, {
-    libraryOptions: options.libraryOptions,
-  });
-
-  if (result.issues) {
-    return {
-      success: false,
-      error: result,
-    };
-  }
-
-  return {
-    success: true,
-    value: result.value as Output,
-  };
 }
