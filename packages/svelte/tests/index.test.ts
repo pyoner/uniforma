@@ -16,12 +16,12 @@ test("re-exports the core controller and pointer error helpers", async () => {
     "/subscribed": false,
   });
 
-  expect(result.success).toBe(false);
-  if (result.success) {
+  expect(result.issues).toBeDefined();
+  if (!result.issues) {
     throw new Error("expected validation to fail");
   }
 
-  expect(getMessagesAtPointer(result.error, "/name")).toContain(
+  expect(getMessagesAtPointer(result, "/name")).toContain(
     "Too small: expected string to have >=2 characters",
   );
 });
@@ -35,7 +35,6 @@ test("returns typed output after validation", async () => {
   });
 
   expect(result).toEqual({
-    success: true,
     value: "ADA",
   });
 });

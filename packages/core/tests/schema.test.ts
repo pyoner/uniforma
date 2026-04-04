@@ -1,12 +1,7 @@
 import { expect, test } from "vite-plus/test";
 import { z } from "zod";
 
-import {
-  getDefaultValue,
-  getInputJsonSchema,
-  normalizeJsonSchema,
-  validateSchema,
-} from "../src/index.ts";
+import { getDefaultValue, getInputJsonSchema, normalizeJsonSchema } from "../src/index.ts";
 
 test("extracts JSON Schema from a dual standard schema", () => {
   const schema = z.object({
@@ -30,25 +25,4 @@ test("extracts JSON Schema from a dual standard schema", () => {
     },
     tags: [],
   });
-});
-
-test("validates with Standard Schema and returns a normalized failure shape", async () => {
-  const schema = z.object({
-    profile: z.object({
-      name: z.string().min(2, "Name is too short"),
-    }),
-    age: z.number().min(18, "Age must be 18 or older"),
-  });
-
-  const result = await validateSchema(schema, {
-    profile: { name: "A" },
-    age: 15,
-  });
-
-  expect(result.success).toBe(false);
-  if (result.success) {
-    throw new Error("expected validation to fail");
-  }
-
-  expect(result.error.issues).toHaveLength(2);
 });

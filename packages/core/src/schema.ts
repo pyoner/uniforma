@@ -1,18 +1,10 @@
-import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
+import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 
 import { appendJsonPointer } from "./paths.ts";
 import { cloneValue } from "./values.ts";
-import type {
-  InferOutput,
-  JsonSchemaOptions,
-  JsonSchemaTarget,
-  JSONSchema,
-  NormalizedSchemaNode,
-  ValidationOptions,
-  ValidationResult,
-} from "./types.ts";
+import type { JsonSchemaOptions, JSONSchema, NormalizedSchemaNode } from "./types.ts";
 
-const DEFAULT_TARGET: JsonSchemaTarget = "draft-2020-12";
+const DEFAULT_TARGET: StandardJSONSchemaV1.Target = "draft-2020-12";
 type MutableNormalizedNode = {
   -readonly [Key in keyof NormalizedSchemaNode]: NormalizedSchemaNode[Key];
 };
@@ -25,38 +17,6 @@ export function getInputJsonSchema<TSchema extends StandardJSONSchemaV1>(
     target: options.target ?? DEFAULT_TARGET,
     libraryOptions: options.libraryOptions,
   }) as JSONSchema;
-}
-
-export function getOutputJsonSchema<TSchema extends StandardJSONSchemaV1>(
-  schema: TSchema,
-  options: JsonSchemaOptions = {},
-): JSONSchema {
-  return schema["~standard"].jsonSchema.output({
-    target: options.target ?? DEFAULT_TARGET,
-    libraryOptions: options.libraryOptions,
-  }) as JSONSchema;
-}
-
-export async function validateSchema<TSchema extends StandardSchemaV1>(
-  schema: TSchema,
-  value: unknown,
-  options: ValidationOptions = {},
-): Promise<ValidationResult<InferOutput<TSchema>>> {
-  const result = await schema["~standard"].validate(value, {
-    libraryOptions: options.libraryOptions,
-  });
-
-  if (result.issues) {
-    return {
-      success: false,
-      error: result,
-    };
-  }
-
-  return {
-    success: true,
-    value: result.value as InferOutput<TSchema>,
-  };
 }
 
 export function normalizeJsonSchema(
@@ -82,7 +42,7 @@ export function normalizeJsonSchema(
     node.required = schema.required;
     const properties: Record<string, NormalizedSchemaNode> = {};
     for (const [key, value] of Object.entries(schema.properties ?? {})) {
-      properties[key] = normalizeJsonSchema(value, appendJsonPointer(pointer, key));
+      properties[key] = normalizeJsonSchema(value as JSONSchema, appendJsonPointer(pointer, key));
     }
     node.properties = properties;
   }
@@ -90,7 +50,7 @@ export function normalizeJsonSchema(
   if (kind === "array") {
     const itemSchema = Array.isArray(schema.items) ? schema.items[0] : schema.items;
     if (itemSchema) {
-      node.item = normalizeJsonSchema(itemSchema, appendJsonPointer(pointer, 0));
+      node.item = normalizeJsonSchema(itemSchema as JSONSchema, appendJsonPointer(pointer, 0));
     }
   }
 
@@ -106,7 +66,7 @@ export function getDefaultValue(schema: JSONSchema): unknown {
     case "object": {
       const result: Record<string, unknown> = {};
       for (const [key, propertySchema] of Object.entries(schema.properties ?? {})) {
-        const propertyValue = getDefaultValue(propertySchema);
+        const propertyValue = getDefaultValue(propertySchema as JSONSchema);
         if (propertyValue !== undefined) {
           result[key] = propertyValue;
         }

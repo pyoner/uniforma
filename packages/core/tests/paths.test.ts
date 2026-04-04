@@ -1,4 +1,5 @@
 import { expect, test } from "vite-plus/test";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import {
   appendJsonPointer,
@@ -7,7 +8,6 @@ import {
   issuePathToPointer,
   pointerToSegments,
   segmentsToPointer,
-  type IssuePath,
 } from "../src/index.ts";
 
 test("converts JSON Pointer values to canonical segments", () => {
@@ -17,7 +17,7 @@ test("converts JSON Pointer values to canonical segments", () => {
 });
 
 test("converts issue paths to JSON Pointers", () => {
-  const issuePath: IssuePath = ["profile", { key: "names" }, { key: 0 }];
+  const issuePath: StandardSchemaV1.Issue["path"] = ["profile", { key: "names" }, { key: 0 }];
 
   expect(issuePathToPointer(issuePath)).toBe("/profile/names/0");
   expect(issuePathToPointer(undefined)).toBe("");

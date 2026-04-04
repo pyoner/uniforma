@@ -1,10 +1,8 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
-  FailureResult,
   FlatFields,
   FormController,
   FormStatus,
-  InferInput,
-  InferOutput,
   JsonPointer,
   NormalizedSchemaNode,
   UniformaSchema,
@@ -46,8 +44,8 @@ export interface FieldProps {
 export interface FormRuntime<TSchema extends UniformaSchema = UniformaSchema> {
   readonly controller: FormController<TSchema>;
   readonly fields: FlatFields;
-  readonly value: InferInput<TSchema>;
-  readonly errors: FailureResult | null;
+  readonly value: StandardSchemaV1.InferInput<TSchema>;
+  readonly errors: StandardSchemaV1.FailureResult | null;
   readonly status: FormStatus;
   getFieldErrors: (pointer: JsonPointer) => readonly string[];
   getFieldInput: (pointer: JsonPointer) => unknown;
@@ -58,7 +56,7 @@ export interface FormRuntime<TSchema extends UniformaSchema = UniformaSchema> {
 }
 
 export interface FormRenderState {
-  readonly errors: FailureResult | null;
+  readonly errors: StandardSchemaV1.FailureResult | null;
   readonly rootErrors: readonly string[];
   readonly valid: boolean;
   readonly status: FormStatus;
@@ -66,11 +64,13 @@ export interface FormRenderState {
 
 export interface FormComponentProps<TSchema extends UniformaSchema = UniformaSchema> {
   readonly schema: TSchema;
-  readonly initialValue?: InferInput<TSchema>;
+  readonly initialValue?: StandardSchemaV1.InferInput<TSchema>;
   readonly components?: FormComponents;
   readonly validateOn?: ValidationEvent | readonly ValidationEvent[];
-  readonly onValueChange?: ((value: InferInput<TSchema>) => void) | undefined;
-  readonly onSubmit?: ((value: InferOutput<TSchema>) => void | Promise<void>) | undefined;
-  readonly onReset?: ((value: InferInput<TSchema>) => void) | undefined;
+  readonly onValueChange?: ((value: StandardSchemaV1.InferInput<TSchema>) => void) | undefined;
+  readonly onSubmit?:
+    | ((value: StandardSchemaV1.InferOutput<TSchema>) => void | Promise<void>)
+    | undefined;
+  readonly onReset?: ((value: StandardSchemaV1.InferInput<TSchema>) => void) | undefined;
   readonly controls?: Snippet<[FormRenderState]> | undefined;
 }

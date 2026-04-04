@@ -1,7 +1,7 @@
 <script lang="ts">
+  import type { StandardSchemaV1 } from "@standard-schema/spec";
   import {
     createFormController,
-    type FailureResult,
     getMessagesAtPointer,
     getValueAtPointer,
     hasErrors,
@@ -9,7 +9,6 @@
     type FlatFields,
     type FormController,
     type FormStatus,
-    type InferInput,
     type UniformaSchema,
   } from "@uniforma/core";
 
@@ -40,7 +39,7 @@
 
   let controller = $state<FormController<UniformaSchema> | null>(null);
   let fields = $state<FlatFields>({});
-  let currentErrors = $state<FailureResult | null>(null);
+  let currentErrors = $state<StandardSchemaV1.FailureResult | null>(null);
   let status = $state<FormStatus>("idle");
   let lastSchema = $state<UniformaSchema | null>(null);
   let lastInitialValueKey = $state<string | undefined>(undefined);
@@ -73,7 +72,11 @@
   });
 
   const currentValue = $derived(
-    controller ? (controller.inflate(fields) as InferInput<UniformaSchema>) : undefined,
+    controller
+      ? (controller.inflate(
+          fields,
+        ) as StandardSchemaV1.InferInput<UniformaSchema>)
+      : undefined,
   );
   const normalizedSchema = $derived(controller?.normalizedSchema ?? null);
   const rootField = $derived(
@@ -86,13 +89,15 @@
   const RootComponent = $derived(
     rootField ? getComponentFromContainer(rootField) : null,
   );
-  const rootProps = $derived(normalizedSchema && rootField ? getProps(rootField) : {});
+  const rootProps = $derived(
+    normalizedSchema && rootField ? getProps(rootField) : {},
+  );
   const form = $derived<FormRuntime<UniformaSchema> | null>(
     controller
       ? {
           controller,
           fields,
-          value: currentValue as InferInput<UniformaSchema>,
+          value: currentValue as StandardSchemaV1.InferInput<UniformaSchema>,
           errors: currentErrors,
           status,
           getFieldErrors(pointer) {
@@ -129,7 +134,7 @@
     }
 
     const result = await validateFields("submit");
-    if (result.success) {
+    if (!result.issues) {
       await onSubmit?.(result.value);
     }
   }
@@ -142,7 +147,9 @@
     fields = { ...controller.initialFields };
     currentErrors = null;
     status = "idle";
-    onReset?.(controller.inflate(fields) as InferInput<UniformaSchema>);
+    onReset?.(
+      controller.inflate(fields) as StandardSchemaV1.InferInput<UniformaSchema>,
+    );
   }
 
   async function updateFieldValue(pointer: string, value: unknown) {
@@ -152,7 +159,11 @@
 
     const nextFields = replacePointerValue(fields, pointer, value);
     fields = nextFields;
-    onValueChange?.(controller.inflate(nextFields) as InferInput<UniformaSchema>);
+    onValueChange?.(
+      controller.inflate(
+        nextFields,
+      ) as StandardSchemaV1.InferInput<UniformaSchema>,
+    );
     await handleEvent("change");
   }
 
@@ -171,12 +182,14 @@
 
     status = event === "submit" ? "submitting" : "validating";
     const result = await controller.validate(fields);
-    currentErrors = result.success ? null : result.error;
+    currentErrors = result.issues ? result : null;
     status = "idle";
     return result;
   }
 
-  function toValidateOnKey(nextValue: FormComponentProps["validateOn"]): string {
+  function toValidateOnKey(
+    nextValue: FormComponentProps["validateOn"],
+  ): string {
     if (nextValue === undefined) {
       return "submit";
     }

@@ -9,14 +9,7 @@ export {
   segmentsToPointer,
   unescapeJsonPointerToken,
 } from "./paths.ts";
-export { Uniforma, issuePathToJsonPointer, issuePathToSegments } from "./spec.ts";
-export {
-  getDefaultValue,
-  getInputJsonSchema,
-  getOutputJsonSchema,
-  normalizeJsonSchema,
-  validateSchema,
-} from "./schema.ts";
+export { getDefaultValue, getInputJsonSchema, normalizeJsonSchema } from "./schema.ts";
 export {
   cloneValue,
   flattenValue,
@@ -30,24 +23,16 @@ export {
 
 export type {
   CreateFormControllerOptions,
-  FailureResult,
   FlatFields,
   FormController,
   FormStatus,
-  IssuePath,
-  InferInput,
-  InferOutput,
   JsonSchemaOptions,
-  JsonSchemaTarget,
   JsonPointer,
   JsonPointerSegment,
   JSONSchema,
   NormalizedSchemaNode,
   SchemaKind,
   UniformaSchema,
-  ValidationFailure,
   ValidationEvent,
   ValidationOptions,
-  ValidationResult,
-  ValidationSuccess,
 } from "./types.ts";

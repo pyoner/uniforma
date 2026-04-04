@@ -19,13 +19,9 @@ export type {
   FlatFields,
   FormController,
   FormStatus,
-  InferInput,
-  InferOutput,
-  JsonSchemaTarget,
   JsonPointer,
   JSONSchema,
   NormalizedSchemaNode,
   UniformaSchema,
   ValidationEvent,
-  ValidationResult,
 } from "@uniforma/core";

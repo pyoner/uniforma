@@ -44,7 +44,6 @@ test("validates flat fields and returns transformed output", async () => {
 
   expect(controller.shouldValidate("change")).toBe(true);
   expect(result).toEqual({
-    success: true,
     value: {
       name: "ADA",
     },

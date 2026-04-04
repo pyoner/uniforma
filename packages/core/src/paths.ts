@@ -1,6 +1,7 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import pointer from "json-pointer";
 
-import type { IssuePath, JsonPointer, JsonPointerSegment } from "./types.ts";
+import type { JsonPointer, JsonPointerSegment } from "./types.ts";
 
 export function appendJsonPointer(base: JsonPointer, segment: PropertyKey): JsonPointer {
   const token = escapeJsonPointerToken(segment);
@@ -15,7 +16,9 @@ export function pointerToSegments(path: JsonPointer): readonly JsonPointerSegmen
   return path === "" ? [] : pointer.parse(path);
 }
 
-export function issuePathToPointer(path: IssuePath | null | undefined): JsonPointer {
+export function issuePathToPointer(
+  path: StandardSchemaV1.Issue["path"] | null | undefined,
+): JsonPointer {
   if (!path) {
     return "";
   }
