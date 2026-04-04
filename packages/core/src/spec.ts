@@ -1,21 +1,25 @@
 import pointer from "json-pointer";
 import type { StandardSchemaV1, StandardJSONSchemaV1 } from "@standard-schema/spec";
 
+export function issuePathToSegments(
+  path: StandardSchemaV1.Issue["path"] | null | undefined,
+): string[] {
+  if (!path) {
+    return [];
+  }
+
+  return path.map((segment) => {
+    const key =
+      typeof segment === "object" && segment !== null && "key" in segment ? segment.key : segment;
+
+    return String(key);
+  });
+}
+
 export function issuePathToJsonPointer(
   path: StandardSchemaV1.Issue["path"] | null | undefined,
 ): string {
-  if (!path) {
-    return "";
-  }
-
-  return pointer.compile(
-    path.map((segment) => {
-      const key =
-        typeof segment === "object" && segment !== null && "key" in segment ? segment.key : segment;
-
-      return String(key);
-    }),
-  );
+  return pointer.compile(issuePathToSegments(path));
 }
 
 export class Uniforma {
